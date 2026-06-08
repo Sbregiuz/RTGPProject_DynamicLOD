@@ -1,0 +1,40 @@
+[
+  {
+    "file": "../include/glad/glad.c",
+    "arguments": [
+      "/usr/bin/g++",
+      "-g",
+      "-O0",
+      "-x",
+      "c++",
+      "-Wall",
+      "-Wno-invalid-offsetof",
+      "-std=c++11",
+      "-I../include/",
+      "../include/glad/glad.c",
+      "-o",
+      "work/test.out"
+    ],
+    "directory": "/home/tabe/Projects/DynamicLOD/RTGPProject_DynamicLOD/src",
+    "output": "work/test.out"
+  },
+  {
+    "file": "work/test.cpp",
+    "arguments": [
+      "/usr/bin/g++",
+      "-g",
+      "-O0",
+      "-x",
+      "c++",
+      "-Wall",
+      "-Wno-invalid-offsetof",
+      "-std=c++11",
+      "-I../include/",
+      "work/test.cpp",
+      "-o",
+      "work/test.out"
+    ],
+    "directory": "/home/tabe/Projects/DynamicLOD/RTGPProject_DynamicLOD/src",
+    "output": "work/test.out"
+  }
+]

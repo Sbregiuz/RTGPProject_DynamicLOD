@@ -1,0 +1,38 @@
+# Template Makefile for RTGP lab lecture exercises - Linux environment
+# author: Davide Gadia
+# Real-Time Graphics Programming - a.a. 2025/2026
+# Master degree in Computer Science
+# Universita' degli Studi di Milano
+#
+
+# name of the file
+FILENAME = work/test
+
+ROOTDIR = ../
+
+CC = gcc
+CXX = g++
+
+# Include path
+IDIR = $(ROOTDIR)include/
+
+# Libraries path
+LDIR = $(ROOTDIR)libs/linux
+
+# compiler flags:
+CXXFLAGS  = -g -O0 -x c++ -Wall -Wno-invalid-offsetof -std=c++11 -I$(IDIR)
+
+# linker flags:
+LDFLAGS = -L$(LDIR) -lglfw3 -lassimp -lz -lminizip -lkubazip -lpoly2tri -lpolyclipping -ldraco -lpugixml
+
+SOURCES = $(ROOTDIR)include/glad/glad.c $(FILENAME).cpp
+
+TARGET = $(FILENAME).out
+
+.PHONY : all
+all:
+	$(CXX) $(CXXFLAGS) $(SOURCES) $(LDFLAGS) -o $(TARGET)
+
+.PHONY : clean
+clean :
+	-rm $(TARGET)
