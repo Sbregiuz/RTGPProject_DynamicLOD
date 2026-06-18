@@ -5,21 +5,26 @@
 # Universita' degli Studi di Milano
 
 # name of the file
-FILENAME = test
+FILENAME = work/test
 
 # Visual Studio compiler
 CC = cl.exe
 
+ROOTDIR = ../
+
 # Include path
-IDIR = ../../include
+IDIR = $(ROOTDIR)include
+
+# Libraries path
+LDIR = $(ROOTDIR)libs/win
 
 # compiler flags:
 CCFLAGS  = /Od /Zi /EHsc /MT
 
 # linker flags:
-LFLAGS = /LIBPATH:../../libs/win glfw3.lib assimp-vc143-mt.lib zlib.lib minizip.lib kubazip.lib poly2tri.lib polyclipping.lib draco.lib pugixml.lib gdi32.lib user32.lib Shell32.lib Advapi32.lib
+LFLAGS = /LIBPATH:$(LDIR) glfw3.lib assimp-vc143-mt.lib zlib.lib minizip.lib kubazip.lib poly2tri.lib polyclipping.lib draco.lib pugixml.lib gdi32.lib user32.lib Shell32.lib Advapi32.lib
 
-SOURCES = ../../include/glad/glad.c $(FILENAME).cpp
+SOURCES = $(IDIR)/glad/glad.c $(FILENAME).cpp
 
 TARGET = $(FILENAME).exe
 

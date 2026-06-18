@@ -1,0 +1,16 @@
+#IGNORE FOLDERS
+/[Ll]ibs/[Ww]in/
+/src/.vscode/
+
+
+#IGNORE FILES
+/src/work/*.exe
+/src/work/*.ilk
+/src/work/*.pdb
+
+/src/test.obj
+/src/vc140.pdb
+/src/glad.obj
+
+/DynamicLOD.code-workspace
+
