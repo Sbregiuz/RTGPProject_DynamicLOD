@@ -32,6 +32,9 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/stb_image.h>
+
 // Window dimensions
 const GLuint WIDTH = 1200, HEIGHT = 900;
 
@@ -43,11 +46,15 @@ void apply_camera_movements();
 
 void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
 
+GLint LoadTexture(const char *texture_path);
+
+// Application Interaction Variables
 bool keys[1024];
 
 GLfloat lastX,lastY; 
 bool firstFrame_mouse = true;
 
+// Matrices initialization
 glm::mat4 view = glm::mat4(1.0f);
 
 glm::mat4 planeModelMatrix = glm::mat4(1.0f);
@@ -58,6 +65,12 @@ glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
 
 //Camera object starting at x,y,z coordinates
 Camera camera(glm::vec3(0.0f, 0.0f, 7.0f), GL_TRUE);
+
+// Textures 
+vector<GLint> textureID;
+GLfloat repeat_texture = 1.0f;
+
+GLint textureLocation, repeatLocation;
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -72,8 +85,9 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    // Create a GLFWwindow object that we can use for GLFW's functions
+
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Tabellini_DynamicLOD", nullptr, nullptr);
+
     if (!window)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -114,14 +128,14 @@ int main()
     // Build and compile our shader program
     Shader object_shader = Shader("work/_vertexShader.vert", "work/_fragmentShader.frag");
    
+    textureID.push_back(LoadTexture("../textures/SoilCracked.png"));
+    textureID.push_back(LoadTexture("../textures/UV_Grid_Sm.png"));
+    
+    // This internal block serves as a scope for deleting the models from the memory and granting better consistency. Without it the exit status is != 0 because some GPU-related varibales doesn't delete in time.
     {
     Model cubeModel("../models/cube.obj");
-
     Model planeModel("../models/plane.obj");
 
-    // Uncommenting this call will result in wireframe polygons.
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
 
     // Game loop
@@ -134,7 +148,6 @@ int main()
         glfwPollEvents();
 
         // Camera control 
-
          
         view = camera.GetViewMatrix();
 
@@ -142,7 +155,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Render
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         glViewport(0,0, width, height);
 
@@ -160,7 +173,6 @@ int main()
 
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel);
-
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
@@ -208,19 +220,60 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 }
 
+GLint LoadTexture(const char *texture_path){
+    GLuint texture_image;
+    int w, h, channels;
+    unsigned char* image;
+    image = stbi_load(texture_path, &w, &h, &channels, 0);
+
+    // Checking if the image was loaded correctly
+    if(image == NULL){
+        std::cout << "Failed to load texture" << std::endl;
+        return 0;
+    }
+
+    glGenTextures(1, &texture_image);
+    glBindTexture(GL_TEXTURE_2D, texture_image);
+    
+    if(channels == 3){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    } else if (channels == 4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    } else {
+        std::cout << "Non-standard number of channels" << std::endl;
+        return 0;
+    }
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    // Setting up texture repetition and filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+
+    // Cleaning the image from memory. The texture is already bound to GPU.
+    stbi_image_free(image);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texture_image;
+}
+
 void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
 {
 
     // we pass the needed uniforms
-    //textureLocation = glGetUniformLocation(shader.Program, "tex");
-    //repeatLocation = glGetUniformLocation(shader.Program, "repeat");
+    textureLocation = glGetUniformLocation(shader.Program, "tex");
+    repeatLocation = glGetUniformLocation(shader.Program, "repeat");
 
     // PLANE
-    // we activate the texture of the plane
-    //glActiveTexture(GL_TEXTURE1);
-    // glBindTexture(GL_TEXTURE_2D, textureID[1]);
-    // glUniform1i(textureLocation, 1);
-    // glUniform1f(repeatLocation, 80.0);
+    // texture 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureID[0]);
+    glUniform1i(textureLocation, 0);
+    glUniform1f(repeatLocation, 80.0);
 
     /*
       we create the transformation matrix
@@ -248,6 +301,12 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
 
     
     // CUBE
+    // texture
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textureID[1]);
+    glUniform1i(textureLocation, 1);
+    glUniform1f(repeatLocation, repeat_texture);
+
     // we reset to identity at each frame
     cubeModelMatrix = glm::mat4(1.0f);
     //cubeNormalMatrix = glm::mat3(1.0f);
