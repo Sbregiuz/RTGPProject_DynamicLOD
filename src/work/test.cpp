@@ -22,26 +22,42 @@
     #error windows.h was included!
 #endif
 
+//INCLUDES
+#include <utils/model.h>
+#include <utils/shader.h>
+#include <utils/camera.h>
 
-// Function prototypes
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // Window dimensions
 const GLuint WIDTH = 1200, HEIGHT = 900;
 
-// Shaders
-const GLchar* vertexShaderSource = "#version 410 core\n"
-    "layout (location = 0) in vec3 position;\n"
-    "void main()\n"
-    "{\n"
-    "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-    "}\0";
-const GLchar* fragmentShaderSource = "#version 410 core\n"
-    "out vec4 color;\n"
-    "void main()\n"
-    "{\n"
-    "color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
+// Function prototypes
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+
+void apply_camera_movements();
+
+void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
+
+bool keys[1024];
+
+GLfloat lastX,lastY; 
+bool firstFrame_mouse = true;
+
+glm::mat4 view = glm::mat4(1.0f);
+
+glm::mat4 planeModelMatrix = glm::mat4(1.0f);
+glm::mat3 planeNormalMatrix = glm::mat3(1.0f);
+
+glm::mat4 cubeModelMatrix = glm::mat4(1.0f);
+glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
+
+//Camera object starting at x,y,z coordinates
+Camera camera(glm::vec3(0.0f, 0.0f, 7.0f), GL_TRUE);
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -57,12 +73,21 @@ int main()
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     // Create a GLFWwindow object that we can use for GLFW's functions
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Test", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Tabellini_DynamicLOD", nullptr, nullptr);
+    if (!window)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
     glfwMakeContextCurrent(window);
 
     // Set the required callback functions
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
     //glewExperimental = GL_TRUE;
     // Initialize GLEW to setup the OpenGL Function pointers
@@ -77,127 +102,166 @@ int main()
     // Define the viewport dimensions
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
+    //glViewport(0, 0, width, height);
 
+
+    // we enable Z test
+    glEnable(GL_DEPTH_TEST);
+
+    //the "clear" color for the frame buffer
+    glClearColor(0.26f, 0.46f, 0.98f, 1.0f);
 
     // Build and compile our shader program
-    // Vertex shader
-    GLint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // Check for compile time errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
+    Shader object_shader = Shader("work/_vertexShader.vert", "work/_fragmentShader.frag");
+   
     {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // Fragment shader
-    GLint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // Check for compile time errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // Link shaders
-    GLint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // Check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    Model cubeModel("../models/cube.obj");
 
-
-    // Set up vertex data (and buffer(s)) and attribute pointers
-    //GLfloat vertices[] = {
-    //  // First triangle
-    //   0.5f,  0.5f,  // Top Right
-    //   0.5f, -0.5f,  // Bottom Right
-    //  -0.5f,  0.5f,  // Top Left
-    //  // Second triangle
-    //   0.5f, -0.5f,  // Bottom Right
-    //  -0.5f, -0.5f,  // Bottom Left
-    //  -0.5f,  0.5f   // Top Left
-    //};
-    GLfloat vertices[] = {
-         0.5f,  0.5f, 0.0f,  // Top Right
-         0.5f, -0.5f, 0.0f,  // Bottom Right
-        -0.5f, -0.5f, 0.0f,  // Bottom Left
-        -0.5f,  0.5f, 0.0f   // Top Left
-    };
-    GLuint indices[] = {  // Note that we start from 0!
-        0, 1, 3,  // First Triangle
-        1, 2, 3   // Second Triangle
-    };
-    GLuint VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    // Bind the Vertex Array Object first, then bind and set vertex buffer(s) and attribute pointer(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
-
-    glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs), remember: do NOT unbind the EBO, keep it bound to this VAO
-
+    Model planeModel("../models/plane.obj");
 
     // Uncommenting this call will result in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
+    glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
 
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
+        // Simulation updates 
+        
+
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
 
-        // Render
+        // Camera control 
+
+         
+        view = camera.GetViewMatrix();
+
         // Clear the colorbuffer
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Render
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glViewport(0,0, width, height);
+
+        object_shader.Use();
+
+        //ObjectSection 
+        //For each object we must use the shader 
+        //and define the matrices 
+
+        //Passing the values to the shader 
+        glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "projectionMatrix"), 1, GL_FALSE, glm::value_ptr(cameraProjection));
+
+        glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(view));
+        
 
         // Draw our first triangle
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        //glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        RenderObjects(object_shader, planeModel, cubeModel);
+
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
     }
-    // Properly de-allocate all resources once they've outlived their purpose
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    }
+    object_shader.Delete();
+
     // Terminate GLFW, clearing any resources allocated by GLFW.
     glfwTerminate();
+
     return 0;
 }
 
+// --------------------------------------------------------------------- FUNCTIONS ---------------------//
 // Is called whenever a key is pressed/released via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+// callback for mouse events
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+      // we move the camera view following the mouse cursor
+      // we calculate the offset of the mouse cursor from the position in the last frame
+      // when rendering the first frame, we do not have a "previous state" for the mouse, so we set the previous state equal to the initial values (thus, the offset will be = 0)
+      if(firstFrame_mouse)
+      {
+          lastX = xpos;
+          lastY = ypos;
+          firstFrame_mouse = false;
+      }
+
+      // offset of mouse cursor position
+      GLfloat xoffset = xpos - lastX;
+      GLfloat yoffset = lastY - ypos;
+
+      // the new position will be the previous one for the next frame
+      lastX = xpos;
+      lastY = ypos;
+
+      // we pass the offset to the Camera class instance in order to update the rendering
+      camera.ProcessMouseMovement(xoffset, yoffset);
+
+}
+
+void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
+{
+
+    // we pass the needed uniforms
+    //textureLocation = glGetUniformLocation(shader.Program, "tex");
+    //repeatLocation = glGetUniformLocation(shader.Program, "repeat");
+
+    // PLANE
+    // we activate the texture of the plane
+    //glActiveTexture(GL_TEXTURE1);
+    // glBindTexture(GL_TEXTURE_2D, textureID[1]);
+    // glUniform1i(textureLocation, 1);
+    // glUniform1f(repeatLocation, 80.0);
+
+    /*
+      we create the transformation matrix
+
+      N.B.) the last defined is the first applied
+
+      We need also the matrix for normals transformation, which is the inverse of the transpose of the 3x3 submatrix (upper left) of the modelview. We do not consider the 4th column because we do not need translations for normals.
+      An explanation (where XT means the transpose of X, etc):
+        "Two column vectors X and Y are perpendicular if and only if XT.Y=0. If We're going to transform X by a matrix M, we need to transform Y by some matrix N so that (M.X)T.(N.Y)=0. Using the identity (A.B)T=BT.AT, this becomes (XT.MT).(N.Y)=0 => XT.(MT.N).Y=0. If MT.N is the identity matrix then this reduces to XT.Y=0. And MT.N is the identity matrix if and only if N=(MT)-1, i.e. N is the inverse of the transpose of M.
+    */
+    // we reset to identity at each frame
+    planeModelMatrix = glm::mat4(1.0f);
+    //planeNormalMatrix = glm::mat3(1.0f);
+    planeModelMatrix = glm::translate(planeModelMatrix, glm::vec3(0.0f, -1.0f, 0.0f));
+    planeModelMatrix = glm::scale(planeModelMatrix, glm::vec3(10.0f, 1.0f, 10.0f));
+    //planeNormalMatrix = glm::inverseTranspose(glm::mat3(view*planeModelMatrix));
+
+    glUniformMatrix4fv(glGetUniformLocation(shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(planeModelMatrix));
+
+    /*
+    glUniformMatrix3fv(glGetUniformLocation(shader.Program, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(planeNormalMatrix));
+    */
+    // we render the plane
+    planeModel.Draw();
+
+    
+    // CUBE
+    // we reset to identity at each frame
+    cubeModelMatrix = glm::mat4(1.0f);
+    //cubeNormalMatrix = glm::mat3(1.0f);
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+    //cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
+    //cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(cubeModelMatrix));
+
+    /*
+    glUniformMatrix3fv(glGetUniformLocation(shader.Program, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(cubeNormalMatrix));
+
+    */
+
+    // we render the cube
+    cubeModel.Draw();
 }
