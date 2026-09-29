@@ -51,7 +51,8 @@ GLint LoadTexture(const char *texture_path);
 // Application Interaction Variables
 bool keys[1024];
 
-GLfloat lastX,lastY; 
+bool techCam = false;
+GLfloat game_lastX,game_lastY, tech_lastX, tech_lastY; 
 bool firstFrame_mouse = true;
 
 // Matrices initialization
@@ -64,7 +65,11 @@ glm::mat4 cubeModelMatrix = glm::mat4(1.0f);
 glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
 
 //Camera object starting at x,y,z coordinates
-Camera camera(glm::vec3(0.0f, 0.0f, 7.0f), GL_TRUE);
+Camera* active_camera;
+Camera game_camera(glm::vec3(0.0f, 0.0f, 20.0f), GL_TRUE);
+
+float techCameraDistance = 7.0f;
+Camera tech_camera(glm::vec3(techCameraDistance/sqrtf(2.0f), 1.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
 
 // Textures 
 vector<GLint> textureID;
@@ -137,7 +142,8 @@ int main()
     Model planeModel("../models/plane.obj");
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
-
+    active_camera = &game_camera;
+    
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
@@ -148,8 +154,7 @@ int main()
         glfwPollEvents();
 
         // Camera control 
-         
-        view = camera.GetViewMatrix();
+        view = active_camera->GetViewMatrix();
 
         // Clear the colorbuffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -192,6 +197,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+
+    if( key == GLFW_KEY_1 && action == GLFW_PRESS)
+        active_camera = &game_camera;
+    
+    if( key == GLFW_KEY_2 && action == GLFW_PRESS)
+        active_camera = &tech_camera;
 }
 
 // callback for mouse events
@@ -202,21 +213,35 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
       // when rendering the first frame, we do not have a "previous state" for the mouse, so we set the previous state equal to the initial values (thus, the offset will be = 0)
       if(firstFrame_mouse)
       {
-          lastX = xpos;
-          lastY = ypos;
+          tech_lastX = xpos;
+          tech_lastY = ypos;
+          game_lastX = xpos;
+          game_lastY = ypos;
           firstFrame_mouse = false;
       }
 
+      GLfloat* lastX;
+      GLfloat* lastY;
+
+      if(techCam){
+        lastX = &tech_lastX;
+        lastY = &tech_lastY;
+      }
+      else{
+        lastX = &game_lastX;
+        lastY = &game_lastY;
+      }
+
       // offset of mouse cursor position
-      GLfloat xoffset = xpos - lastX;
-      GLfloat yoffset = lastY - ypos;
+      GLfloat xoffset = xpos - *lastX;
+      GLfloat yoffset = *lastY - ypos;
 
       // the new position will be the previous one for the next frame
-      lastX = xpos;
-      lastY = ypos;
+      *lastX = GLfloat(xpos);
+      *lastY = GLfloat(ypos);
 
       // we pass the offset to the Camera class instance in order to update the rendering
-      camera.ProcessMouseMovement(xoffset, yoffset);
+      active_camera->ProcessMouseMovement(xoffset, yoffset);
 
 }
 
