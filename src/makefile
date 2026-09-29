@@ -25,7 +25,7 @@ CXXFLAGS  = -g -O0 -x c++ -Wall -Wno-invalid-offsetof -std=c++11 -I$(IDIR)
 # linker flags:
 LDFLAGS = -L$(LDIR) -lglfw3 -lassimp -lz -lminizip -lkubazip -lpoly2tri -lpolyclipping -ldraco -lpugixml
 
-SOURCES = $(ROOTDIR)include/glad/glad.c $(FILENAME).cpp
+SOURCES = $(ROOTDIR)include/glad/glad.c $(FILENAME).cpp $(IDIR)imgui/*.cpp
 
 TARGET = $(FILENAME).out
 

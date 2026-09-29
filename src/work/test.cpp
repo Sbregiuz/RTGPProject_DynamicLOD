@@ -35,6 +35,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 // Window dimensions
 const GLuint WIDTH = 1200, HEIGHT = 900;
 
@@ -47,6 +51,8 @@ void apply_camera_movements();
 void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
 
 GLint LoadTexture(const char *texture_path);
+
+void GuiLoading();
 
 // Application Interaction Variables
 bool keys[1024];
@@ -118,6 +124,14 @@ int main()
         return -1;
     }
 
+    // Initialize ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 410");
+    
     // Define the viewport dimensions
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -153,6 +167,13 @@ int main()
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
 
+        //ImGui
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        GuiLoading();
+
         // Camera control 
         view = active_camera->GetViewMatrix();
 
@@ -179,12 +200,20 @@ int main()
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel);
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         // Swap the screen buffers
         glfwSwapBuffers(window);
     }
     }
     object_shader.Delete();
-
+    
+    //ImGui Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    
     // Terminate GLFW, clearing any resources allocated by GLFW.
     glfwTerminate();
 
@@ -285,6 +314,13 @@ GLint LoadTexture(const char *texture_path){
 
     return texture_image;
 }
+
+void GuiLoading(){
+    ImGui::Begin("My Window");
+    ImGui::Text("Hello, ImGui!");
+    ImGui::End();
+}
+
 
 void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
 {
