@@ -134,6 +134,13 @@ public:
         this->UpdateCameraVectors();
     }
 
+    void SetCameraAngles(float yaw, float pitch){
+        this->Yaw = yaw;
+        this->Pitch = pitch;
+        this->UpdateCameraVectors();
+        std::cout << "After SetCameraAngles(): Yaw " << this->Yaw << " Pitch " <<this -> Pitch << std::endl;
+    }
+
 private:
     //////////////////////////////////////////
     // it updates the camera reference system
