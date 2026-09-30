@@ -1,3 +1,6 @@
+#include "glm/ext/vector_float3.hpp"
+#include "glm/geometric.hpp"
+#include <cstdio>
 #include <iostream>
 
 // THIS IS OPTIONAL AND NOT REQUIRED, ONLY USE THIS IF YOU DON'T WANT GLAD TO INCLUDE windows.h
@@ -52,14 +55,17 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
 
 GLint LoadTexture(const char *texture_path);
 
-void GuiLoading();
+void Gui_SetUp();
+void ToggleCursor(GLFWwindow *window);
 
 // Application Interaction Variables
 bool keys[1024];
 
 bool techCam = false;
-GLfloat game_lastX,game_lastY, tech_lastX, tech_lastY; 
+GLfloat game_lastX = WIDTH/2.0f ,game_lastY = HEIGHT/2.0f , tech_lastX = WIDTH/2.0f, tech_lastY = HEIGHT/2.0f; 
 bool firstFrame_mouse = true;
+
+bool show_cursor = false;
 
 // Matrices initialization
 glm::mat4 view = glm::mat4(1.0f);
@@ -110,9 +116,10 @@ int main()
 
     // Set the required callback functions
     glfwSetKeyCallback(window, key_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
+    //glfwSetCursorPosCallback(window, mouse_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
     //glewExperimental = GL_TRUE;
     // Initialize GLEW to setup the OpenGL Function pointers
@@ -156,6 +163,21 @@ int main()
     Model planeModel("../models/plane.obj");
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
+    
+    // Given: camera position and target point
+    glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);  // center of models
+    glm::vec3 direction = glm::normalize(target - tech_camera.Position);
+
+    // Compute Yaw and Pitch from direction
+    float yaw = glm::degrees(atan2(direction.z, direction.x));
+    float pitch = glm::degrees(asin(direction.y));
+    tech_camera.SetCameraAngles(yaw, pitch);    
+    
+    direction = glm::normalize(target - game_camera.Position);
+    // Compute Yaw and Pitch from direction
+    yaw = glm::degrees(atan2(direction.z, direction.x));
+    pitch = glm::degrees(asin(direction.y));
+    game_camera.SetCameraAngles(yaw, pitch);       
     active_camera = &game_camera;
     
     // Game loop
@@ -172,7 +194,7 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        GuiLoading();
+        Gui_SetUp();
 
         // Camera control 
         view = active_camera->GetViewMatrix();
@@ -232,21 +254,31 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     
     if( key == GLFW_KEY_2 && action == GLFW_PRESS)
         active_camera = &tech_camera;
+
+    if( key == GLFW_KEY_TAB && action == GLFW_PRESS)
+        ToggleCursor(window);
 }
 
 // callback for mouse events
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+     std::cout << "Mouse callback - xpos: " << xpos << ", ypos: " << ypos 
+              << ", firstFrame: " << firstFrame_mouse 
+              << ", show_cursor: " << show_cursor << std::endl;
+     if (show_cursor) return;
+      if (xpos == 0 && ypos == 0) return;
       // we move the camera view following the mouse cursor
       // we calculate the offset of the mouse cursor from the position in the last frame
       // when rendering the first frame, we do not have a "previous state" for the mouse, so we set the previous state equal to the initial values (thus, the offset will be = 0)
-      if(firstFrame_mouse)
-      {
+     if(firstFrame_mouse)
+     {
           tech_lastX = xpos;
           tech_lastY = ypos;
           game_lastX = xpos;
           game_lastY = ypos;
-          firstFrame_mouse = false;
+          firstFrame_mouse = false;            
+          std::cout << "First frame - setting initial positions" << std::endl;
+          return;
       }
 
       GLfloat* lastX;
@@ -315,10 +347,26 @@ GLint LoadTexture(const char *texture_path){
     return texture_image;
 }
 
-void GuiLoading(){
+void Gui_SetUp(){
     ImGui::Begin("My Window");
     ImGui::Text("Hello, ImGui!");
     ImGui::End();
+    ImGui::Begin("Commands:");
+    ImGui::Text("[1] Game Camera");
+    ImGui::Text("[2] Tech Camera");
+    ImGui::Text("[TAB] Toggle Mouse Cursor");
+    ImGui::End();
+}
+
+void ToggleCursor(GLFWwindow *window){
+    if (show_cursor)
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        firstFrame_mouse = true;
+    }
+    
+    show_cursor = !show_cursor;
 }
 
 
