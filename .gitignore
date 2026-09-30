@@ -1,7 +1,7 @@
 #IGNORE FOLDERS
 /[Ll]ibs/[Ww]in/
 /src/.vscode/
-
+/src/.cache/
 
 #IGNORE FILES
 /src/work/*.exe

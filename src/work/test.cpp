@@ -66,6 +66,7 @@ GLfloat game_lastX = WIDTH/2.0f ,game_lastY = HEIGHT/2.0f , tech_lastX = WIDTH/2
 bool firstFrame_mouse = true;
 
 bool show_cursor = false;
+bool fill_faces = true;
 
 // Matrices initialization
 glm::mat4 view = glm::mat4(1.0f);
@@ -255,6 +256,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if( key == GLFW_KEY_2 && action == GLFW_PRESS)
         active_camera = &tech_camera;
 
+    if( key == GLFW_KEY_W && action == GLFW_PRESS)
+        fill_faces = !fill_faces;
+
     if( key == GLFW_KEY_TAB && action == GLFW_PRESS)
         ToggleCursor(window);
 }
@@ -355,6 +359,7 @@ void Gui_SetUp(){
     ImGui::Text("[1] Game Camera");
     ImGui::Text("[2] Tech Camera");
     ImGui::Text("[TAB] Toggle Mouse Cursor");
+    ImGui::Text("[W] Toggle wireframe");
     ImGui::End();
 }
 
@@ -408,6 +413,8 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     // we render the plane
     planeModel.Draw();
 
+    if (!fill_faces)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
     // CUBE
     // texture
