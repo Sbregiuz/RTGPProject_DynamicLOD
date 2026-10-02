@@ -89,7 +89,6 @@ vector<GLint> textureID;
 GLfloat repeat_texture = 1.0f;
 
 GLint textureLocation, repeatLocation;
-
 // The MAIN function, from here we start the application and run the game loop
 int main()
 {
@@ -386,6 +385,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     // texture 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureID[0]);
+    glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), false);
     glUniform1i(textureLocation, 0);
     glUniform1f(repeatLocation, 80.0);
 
@@ -413,16 +413,19 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     // we render the plane
     planeModel.Draw();
 
-    if (!fill_faces)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
     // CUBE
     // texture
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textureID[1]);
-    glUniform1i(textureLocation, 1);
-    glUniform1f(repeatLocation, repeat_texture);
-
+    if (!fill_faces){
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), true);
+    }else{
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), false);
+        glUniform1i(textureLocation, 1);
+        glUniform1f(repeatLocation, repeat_texture);
+    }
     // we reset to identity at each frame
     cubeModelMatrix = glm::mat4(1.0f);
     //cubeNormalMatrix = glm::mat3(1.0f);
