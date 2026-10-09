@@ -1,0 +1,4 @@
+-std=c++11
+-Wall
+-Wno-invalid-offsetof
+-I../include/
