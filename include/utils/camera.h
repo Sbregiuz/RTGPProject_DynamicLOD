@@ -138,7 +138,6 @@ public:
         this->Yaw = yaw;
         this->Pitch = pitch;
         this->UpdateCameraVectors();
-        std::cout << "After SetCameraAngles(): Yaw " << this->Yaw << " Pitch " <<this -> Pitch << std::endl;
     }
 
 private:

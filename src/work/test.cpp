@@ -43,7 +43,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 // Window dimensions
-const GLuint WIDTH = 1200, HEIGHT = 900;
+const GLuint WIDTH = 1920, HEIGHT = 1080;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -56,6 +56,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
 GLint LoadTexture(const char *texture_path);
 
 void Gui_SetUp();
+void Gui_SliderSetup();
 void ToggleCursor(GLFWwindow *window);
 
 // Application Interaction Variables
@@ -64,6 +65,10 @@ bool keys[1024];
 bool techCam = false;
 GLfloat game_lastX = WIDTH/2.0f ,game_lastY = HEIGHT/2.0f , tech_lastX = WIDTH/2.0f, tech_lastY = HEIGHT/2.0f; 
 bool firstFrame_mouse = true;
+
+float min_camera_distance = 3.0f;
+float max_camera_distance = 200.0f;
+float actual_camera_distance = min_camera_distance;
 
 bool show_cursor = false;
 bool fill_faces = true;
@@ -79,7 +84,7 @@ glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
 
 //Camera object starting at x,y,z coordinates
 Camera* active_camera;
-Camera game_camera(glm::vec3(0.0f, 0.0f, 20.0f), GL_TRUE);
+Camera game_camera(glm::vec3(0.0f, 1.0f, 20.0f), GL_TRUE);
 
 float techCameraDistance = 7.0f;
 Camera tech_camera(glm::vec3(techCameraDistance/sqrtf(2.0f), 1.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
@@ -195,8 +200,10 @@ int main()
         ImGui::NewFrame();
 
         Gui_SetUp();
+        Gui_SliderSetup();
 
         // Camera control 
+        game_camera.Position.z = actual_camera_distance;
         view = active_camera->GetViewMatrix();
 
         // Clear the colorbuffer
@@ -351,14 +358,20 @@ GLint LoadTexture(const char *texture_path){
 }
 
 void Gui_SetUp(){
-    ImGui::Begin("My Window");
-    ImGui::Text("Hello, ImGui!");
-    ImGui::End();
     ImGui::Begin("Commands:");
     ImGui::Text("[1] Game Camera");
     ImGui::Text("[2] Tech Camera");
-    ImGui::Text("[TAB] Toggle Mouse Cursor");
     ImGui::Text("[W] Toggle wireframe");
+    ImGui::End();
+}
+
+void Gui_SliderSetup(){
+    ImVec2 position = ImVec2(WIDTH*0.7f,HEIGHT*0.8f);
+    ImGui::SetNextWindowPos(position);
+    ImGui::Begin("Camera distance");
+    ImGui::Text("Move the slider to set the distance from the game camera to the subject under test");
+    ImGui::Text("Ctrl+RMB: From slider to input text");
+    ImGui::SliderFloat("Prova Label", &actual_camera_distance, min_camera_distance, max_camera_distance);
     ImGui::End();
 }
 
@@ -387,7 +400,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     glBindTexture(GL_TEXTURE_2D, textureID[0]);
     glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), false);
     glUniform1i(textureLocation, 0);
-    glUniform1f(repeatLocation, 80.0);
+    glUniform1f(repeatLocation, 500.0);
 
     /*
       we create the transformation matrix
@@ -402,7 +415,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     planeModelMatrix = glm::mat4(1.0f);
     //planeNormalMatrix = glm::mat3(1.0f);
     planeModelMatrix = glm::translate(planeModelMatrix, glm::vec3(0.0f, -1.0f, 0.0f));
-    planeModelMatrix = glm::scale(planeModelMatrix, glm::vec3(10.0f, 1.0f, 10.0f));
+    planeModelMatrix = glm::scale(planeModelMatrix, glm::vec3(100.0f, 1.0f, 100.0f));
     //planeNormalMatrix = glm::inverseTranspose(glm::mat3(view*planeModelMatrix));
 
     glUniformMatrix4fv(glGetUniformLocation(shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(planeModelMatrix));
