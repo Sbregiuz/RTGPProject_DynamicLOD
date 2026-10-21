@@ -73,6 +73,8 @@ float actual_camera_distance = min_camera_distance;
 bool show_cursor = false;
 bool fill_faces = true;
 
+float TEXTSIZE = 1.5f;
+
 // Matrices initialization
 glm::mat4 view = glm::mat4(1.0f);
 
@@ -358,7 +360,9 @@ GLint LoadTexture(const char *texture_path){
 }
 
 void Gui_SetUp(){
+    ImGui::SetNextWindowSize(ImVec2(WIDTH*0.15f, HEIGHT*0.15f));
     ImGui::Begin("Commands:");
+    ImGui::SetWindowFontScale(TEXTSIZE);
     ImGui::Text("[1] Game Camera");
     ImGui::Text("[2] Tech Camera");
     ImGui::Text("[W] Toggle wireframe");
@@ -366,10 +370,14 @@ void Gui_SetUp(){
 }
 
 void Gui_SliderSetup(){
-    ImVec2 position = ImVec2(WIDTH*0.7f,HEIGHT*0.8f);
+    ImVec2 borders = ImVec2(WIDTH*0.01f,HEIGHT*0.01f);
+    ImVec2 size = ImVec2(WIDTH*0.35f, HEIGHT*0.15f);
+    ImVec2 position = ImVec2(WIDTH - size.x - borders.x, HEIGHT - size.y - borders.y);
     ImGui::SetNextWindowPos(position);
+    ImGui::SetNextWindowSize(size);
     ImGui::Begin("Camera distance");
-    ImGui::Text("Move the slider to set the distance from the game camera to the subject under test");
+    ImGui::SetWindowFontScale(TEXTSIZE);
+    ImGui::Text("Move the slider to set the distance from the game camera\n     to the subject under test");
     ImGui::Text("Ctrl+RMB: From slider to input text");
     ImGui::SliderFloat("Prova Label", &actual_camera_distance, min_camera_distance, max_camera_distance);
     ImGui::End();
