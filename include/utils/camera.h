@@ -15,6 +15,7 @@ Universita' degli Studi di Milano
 #pragma once
 
 // we use GLM to create the view matrix and to manage camera transformations
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 

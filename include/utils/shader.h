@@ -15,6 +15,7 @@ Universita' degli Studi di Milano
 
 using namespace std;
 
+#include <glad/glad.h>
 // Std. Includes
 #include <string>
 #include <fstream>

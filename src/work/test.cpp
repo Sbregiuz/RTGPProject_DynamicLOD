@@ -166,7 +166,7 @@ int main()
     
     // This internal block serves as a scope for deleting the models from the memory and granting better consistency. Without it the exit status is != 0 because some GPU-related varibales doesn't delete in time.
     {
-    Model cubeModel("../models/cube.obj");
+    Model cubeModel("../models/babyyoda.obj");
     Model planeModel("../models/plane.obj");
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);

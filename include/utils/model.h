@@ -21,11 +21,12 @@ Universita' degli Studi di Milano
 
 
 #pragma once
+#include <vector>
 using namespace std;
 
 // we use GLM data structures to convert data in the Assimp data structures in a data structures suited for VBO, VAO and EBO buffers
 #include <glm/glm.hpp>
-
+#include <glad/glad.h>
 // Assimp includes
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -104,6 +105,7 @@ private:
             return;
         }
 
+        cout << "Starting to LOAD THE MODEL: "<< path << endl;
         // we start the recursive processing of nodes in the Assimp data structure
         this->processNode(scene->mRootNode, scene);
     }
@@ -198,16 +200,43 @@ private:
             vertices.emplace_back(vertex);
         }
 
+        cout << "This Mesh Has " << mesh -> mNumFaces<< "Faces" << endl;
         // for each face of the mesh, we retrieve the indices of its vertices , and we store them in a vector data structure
         for(i = 0; i < mesh->mNumFaces; i++)
         {
+           // cout << " >>>>>>>>>>>>>>> FACE " << endl;
             aiFace* face = &mesh->mFaces[i];
-             for(j = 0; j < face->mNumIndices; j++)
-                 indices.emplace_back(face->mIndices[j]);
+
+            for(j = 0; j < face->mNumIndices; j++){
+           //      cout << face -> mIndices[j] << endl;
+                indices.emplace_back(face->mIndices[j]);
+            }
+
 
         }
+            // for(int k = 0; k < int(indices.size()); k++){
+            //     cout << "indices[" << k << "] = "<< indices[k] << endl;
+            // }
+            //cout << "Printed all Faces" << endl;
 
+            cout << "Vertices in this MESH "<< int(vertices.size()) << endl; 
+
+            for (int k; k < int(vertices.size()); k++){
+                cout << "The vertex " << k << " < "<<float(vertices[k].Position.x);
+                cout << ", "<<float(vertices[k].Position.y) << ", ";
+                cout << float(vertices[k].Position.z) << "> has ";
+                cout << countFaces(k,indices) << " faces" << endl; 
+            }
         // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
         return Mesh(vertices, indices);
+    }
+
+    int countFaces(int k, vector<GLuint> indices){
+        int count = 0;
+        for (int i = 0; i < int(indices.size()); i++) {
+            if (int(indices[i]) == k)
+                count++;
+        }
+        return count;
     }
 };
