@@ -46,11 +46,17 @@ struct Vertex {
     glm::vec3 Bitangent;
 };
 
+struct Face{
+    int index;
+    int vertices[3];
+};
+
 /////////////////// MESH class ///////////////////////
 class Mesh {
 public:
     // data structures for vertices, and indices of vertices (for faces)
     vector<Vertex> vertices;
+    vector<Face> faces;
     vector<GLuint> indices;
     // VAO
     GLuint VAO;
@@ -68,8 +74,8 @@ public:
     // Constructor
     // We use initializer list and std::move in order to avoid a copy of the arguments
     // This constructor empties the source vectors (vertices and indices)
-    Mesh(vector<Vertex>& vertices, vector<GLuint>& indices) noexcept
-        : vertices(std::move(vertices)), indices(std::move(indices))
+    Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Face>& faces) noexcept
+        : vertices(std::move(vertices)),faces(std::move(faces)),indices(std::move(indices)) 
     {
         this->setupMesh();
     }
@@ -86,7 +92,7 @@ public:
     // In our case it will no longer imply ownership of the GPU resources and its vectors will be empty.
     Mesh(Mesh&& move) noexcept
         // Calls move for both vectors, which internally consists of a simple pointer swap between the new instance and the source one.
-        : vertices(std::move(move.vertices)), indices(std::move(move.indices)), VAO(move.VAO), VBO(move.VBO), EBO(move.EBO)
+        : vertices(std::move(move.vertices)),faces(std::move(move.faces)) ,indices(std::move(move.indices)), VAO(move.VAO), VBO(move.VBO), EBO(move.EBO)
     {
         move.VAO = 0; // We *could* set VBO and EBO to 0 too,
         // but since we bring all the 3 values around we can use just one of them to check ownership of the 3 resources.
@@ -101,6 +107,7 @@ public:
         if (move.VAO) // source instance has GPU resources
         {
             this->vertices = std::move(move.vertices);
+            this->faces = std::move(move.faces);
             this->indices = std::move(move.indices);
             this->VAO = move.VAO;
             this->VBO = move.VBO;

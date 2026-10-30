@@ -21,6 +21,7 @@ Universita' degli Studi di Milano
 
 
 #pragma once
+#include <utils/mesh_simplifier.h>
 #include <vector>
 using namespace std;
 
@@ -34,6 +35,7 @@ using namespace std;
 
 // we include the Mesh class, which manages the "OpenGL side" (= creation and allocation of VBO, VAO, EBO buffers) of the loading of models
 #include <utils/mesh.h>
+#include <utils/NodeFaceAdjacency.h>
 
 /////////////////// MODEL class ///////////////////////
 class Model
@@ -105,7 +107,7 @@ private:
             return;
         }
 
-        cout << "Starting to LOAD THE MODEL: "<< path << endl;
+        //cout << "Starting to LOAD THE MODEL: "<< path << endl;
         // we start the recursive processing of nodes in the Assimp data structure
         this->processNode(scene->mRootNode, scene);
     }
@@ -144,14 +146,17 @@ private:
     // = we create and allocate the buffers used to send mesh data to the GPU
     Mesh processMesh(aiMesh* mesh)
     {
+        NodeFaceAdjacency g = NodeFaceAdjacency(int(mesh->mNumVertices));
         // data structures for vertices and indices of vertices (for faces)
         vector<Vertex> vertices;
         vector<GLuint> indices;
+        vector<Face> faces;
 
         glm::vec3 vector;
         glm::vec2 vec;
 
         Vertex vertex;
+        Face face_mesh;
 
         GLuint i,j;
 
@@ -166,6 +171,9 @@ private:
             vector.y = mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
+
+            g.addNode(i);   //Adding the node the the tmp data structure
+
             // Normals
             vector.x = mesh->mNormals[i].x;
             vector.y = mesh->mNormals[i].y;
@@ -200,35 +208,28 @@ private:
             vertices.emplace_back(vertex);
         }
 
-        cout << "This Mesh Has " << mesh -> mNumFaces<< "Faces" << endl;
+        //cout << "This Mesh Has " << mesh -> mNumFaces<< "Faces" << endl;
         // for each face of the mesh, we retrieve the indices of its vertices , and we store them in a vector data structure
         for(i = 0; i < mesh->mNumFaces; i++)
         {
-           // cout << " >>>>>>>>>>>>>>> FACE " << endl;
             aiFace* face = &mesh->mFaces[i];
 
+            face_mesh = Face();
+            face_mesh.index = i;
+
             for(j = 0; j < face->mNumIndices; j++){
-           //      cout << face -> mIndices[j] << endl;
-                indices.emplace_back(face->mIndices[j]);
+                int vertex_id = face->mIndices[j];
+                face_mesh.vertices[j] = vertex_id;
+                indices.emplace_back(vertex_id);
             }
-
-
+            g.addFace(face_mesh);
+            faces.emplace_back(face_mesh);
         }
-            // for(int k = 0; k < int(indices.size()); k++){
-            //     cout << "indices[" << k << "] = "<< indices[k] << endl;
-            // }
-            //cout << "Printed all Faces" << endl;
-
-            cout << "Vertices in this MESH "<< int(vertices.size()) << endl; 
-
-            for (int k; k < int(vertices.size()); k++){
-                cout << "The vertex " << k << " < "<<float(vertices[k].Position.x);
-                cout << ", "<<float(vertices[k].Position.y) << ", ";
-                cout << float(vertices[k].Position.z) << "> has ";
-                cout << countFaces(k,indices) << " faces" << endl; 
-            }
+        //cout << g.to_string() << endl; 
         // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
-        return Mesh(vertices, indices);
+        Mesh m = Mesh(vertices, indices, faces);
+        MeshSimplification(&m, &g);
+        return m;
     }
 
     int countFaces(int k, vector<GLuint> indices){
