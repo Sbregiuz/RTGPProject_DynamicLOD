@@ -49,6 +49,7 @@ struct Vertex {
 struct Face{
     int index;
     int vertices[3];
+    bool active = true;
 };
 
 /////////////////// MESH class ///////////////////////
