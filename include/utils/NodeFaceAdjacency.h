@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "utils/mesh.h"
+#include <new>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -23,12 +24,36 @@ struct Node{
 
 class NodeFaceAdjacency{
     public:
-        Node *nodes;
         int num_nodes;
+        Node *nodes;
 
         NodeFaceAdjacency(int nodesSize){
             num_nodes = nodesSize;
             nodes = new Node[nodesSize];
+        }
+    
+        // RULE OF 5
+        void operator~(){
+            delete[] nodes;
+        }
+
+        NodeFaceAdjacency(const NodeFaceAdjacency&) = delete;
+        NodeFaceAdjacency& operator=(const NodeFaceAdjacency&) = delete;
+        NodeFaceAdjacency(NodeFaceAdjacency &&other) noexcept:num_nodes(other.num_nodes), nodes(other.nodes){
+            other.nodes = nullptr;
+            other.num_nodes = 0;
+
+        } 
+
+        NodeFaceAdjacency& operator=(NodeFaceAdjacency& other)noexcept{
+            if (this != &other){
+                delete[] nodes;
+                nodes = other.nodes;
+                num_nodes = other.num_nodes;
+                other.nodes = nullptr;
+                other.num_nodes = 0;
+            }
+            return *this;
         }
 
         // FIRST: ALl nodes gets added to the nodes array (each node is located in it's ID position)
