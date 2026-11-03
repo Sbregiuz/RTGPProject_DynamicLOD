@@ -71,7 +71,11 @@ public:
     // because we are not writing a user-defined destructor.
     Model(const string& path)
     {
-        this->loadModel(path);
+        this->loadModel(path,false);
+    }
+
+    Model(const string& path, bool pre_process){
+        this->loadModel(path,pre_process);
     }
 
     //////////////////////////////////////////
@@ -90,7 +94,7 @@ private:
 
     //////////////////////////////////////////
     // loading of the model using Assimp library. Nodes are processed to build a vector of Mesh class instances
-    void loadModel(string path)
+    void loadModel(string path, bool pre_process)
     {
         // loading using Assimp
         // N.B.: it is possible to set, if needed, some operations to be performed by Assimp after the loading.
@@ -107,15 +111,16 @@ private:
             return;
         }
 
+        cout << "processing :"<<path<<endl;
         //cout << "Starting to LOAD THE MODEL: "<< path << endl;
         // we start the recursive processing of nodes in the Assimp data structure
-        this->processNode(scene->mRootNode, scene);
+        this->processNode(scene->mRootNode, scene, pre_process);
     }
 
     //////////////////////////////////////////
 
     // Recursive processing of nodes of Assimp data structure
-    void processNode(aiNode* node, const aiScene* scene)
+    void processNode(aiNode* node, const aiScene* scene, bool pre_process)
     {
         GLuint i;
         
@@ -130,12 +135,12 @@ private:
             // we use emplace_back instead as push_back, so to have the instance created directly in the
             // vector memory, without the creation of a temp copy.
             // https://en.cppreference.com/w/cpp/container/vector/emplace_back
-            this->meshes.emplace_back(processMesh(mesh));
+            this->meshes.emplace_back(processMesh(mesh,pre_process));
         }
         // we then recursively process each of the children nodes
         for(i = 0; i < node->mNumChildren; i++)
         {
-            this->processNode(node->mChildren[i], scene);
+            this->processNode(node->mChildren[i], scene, pre_process);
         }
 
     }
@@ -144,7 +149,7 @@ private:
 
     // Processing of the Assimp mesh in order to obtain an "OpenGL mesh"
     // = we create and allocate the buffers used to send mesh data to the GPU
-    Mesh processMesh(aiMesh* mesh)
+    Mesh processMesh(aiMesh* mesh, bool pre_process)
     {
         NodeFaceAdjacency g(int(mesh->mNumVertices));
         // data structures for vertices and indices of vertices (for faces)
@@ -227,9 +232,11 @@ private:
         }
         //cout << g.to_string() << endl; 
         // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
-        Mesh m = Mesh(vertices, indices, faces);
-        MeshSimplification(&m, &g);
+        Mesh m = Mesh(vertices, indices, faces, pre_process);
+        if(pre_process)
+            MeshSimplification(&m, &g);
 
+        m.initialize();
         return m;
     }
 

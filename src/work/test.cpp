@@ -51,7 +51,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 void apply_camera_movements();
 
-void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel);
+void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel, Model &cubeModel_untouched);
 
 GLint LoadTexture(const char *texture_path);
 
@@ -86,10 +86,10 @@ glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
 
 //Camera object starting at x,y,z coordinates
 Camera* active_camera;
-Camera game_camera(glm::vec3(0.0f, 1.0f, 20.0f), GL_TRUE);
+Camera game_camera(glm::vec3(0.0f, 3.0f, 20.0f), GL_TRUE);
 
 float techCameraDistance = 7.0f;
-Camera tech_camera(glm::vec3(techCameraDistance/sqrtf(2.0f), 1.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
+Camera tech_camera(glm::vec3(techCameraDistance/sqrtf(2.0f), 3.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
 
 // Textures 
 vector<GLint> textureID;
@@ -166,8 +166,9 @@ int main()
     
     // This internal block serves as a scope for deleting the models from the memory and granting better consistency. Without it the exit status is != 0 because some GPU-related varibales doesn't delete in time.
     {
-    Model cubeModel("../models/babyyoda.obj");
+    Model cubeModel("../models/babyyoda.obj",true);
     Model planeModel("../models/plane.obj");
+    Model cubeModel_untouched("../models/babyyoda.obj");
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
     
@@ -229,7 +230,7 @@ int main()
         
 
         // Draw our first triangle
-        RenderObjects(object_shader, planeModel, cubeModel);
+        RenderObjects(object_shader, planeModel, cubeModel, cubeModel_untouched);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -395,7 +396,7 @@ void ToggleCursor(GLFWwindow *window){
 }
 
 
-void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
+void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel, Model &cubeModel_untouched)
 {
 
     // we pass the needed uniforms
@@ -450,7 +451,8 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
     // we reset to identity at each frame
     cubeModelMatrix = glm::mat4(1.0f);
     //cubeNormalMatrix = glm::mat3(1.0f);
-    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+    //cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(-2.2f, 1.0f, 0.0f));
     //cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
     cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
     //cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
@@ -463,4 +465,34 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel)
 
     // we render the cube
     cubeModel.Draw();
+
+    // CUBE UNTOUCHED
+    // texture
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textureID[1]);
+    if (!fill_faces){
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), true);
+    }else{
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glUniform1f(glGetUniformLocation(shader.Program, "wireframe"), false);
+        glUniform1i(textureLocation, 1);
+        glUniform1f(repeatLocation, repeat_texture);
+    }
+    // we reset to identity at each frame
+    cubeModelMatrix = glm::mat4(1.0f);
+    //cubeNormalMatrix = glm::mat3(1.0f);
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(2.2f, 1.0f, 0.0f));
+    //cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
+    //cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(shader.Program, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(cubeModelMatrix));
+
+    /*
+    glUniformMatrix3fv(glGetUniformLocation(shader.Program, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(cubeNormalMatrix));
+
+    */
+
+    // we render the cube
+    cubeModel_untouched.Draw();
 }

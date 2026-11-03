@@ -23,7 +23,7 @@ void GetAdjFaces(Mesh *m, int src, vector<int> *adjFaces);
 void GetLRVertices (Mesh *m, int f, int src, int dst, CollapsedEdge *edge);
 glm::vec4 faceNormal(Mesh *m, int face_id);
 glm::mat4x4 fundamental_plane_q_mat(glm::vec4 plane);
-void provaStampaListaDIMatrici(vector<glm::mat4x4> *Q);
+//void provaStampaListaDIMatrici(vector<glm::mat4x4> *Q);
 
 
 CollapsedEdge HalfEdgeCollapse(Mesh *m,NodeFaceAdjacency *nfa, int src, int dst);
@@ -51,6 +51,7 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         Q[faces[i].vertices[1]] += Kp;
         Q[faces[i].vertices[2]] += Kp;
     }
+    
 
     priority_queue<PriorityRecord,vector<PriorityRecord> ,decltype(&compare_prio)> QEM_prio_queue(&compare_prio);
 
@@ -78,6 +79,7 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         //If the record has deactivated node/s OR this compression would cause foldovers skip it
         if(nfa->nodes[extracted.v_src].active == false || nfa->nodes[extracted.v_dst].active == false)
             continue;
+
 
         if (!sanity_check(extracted.v_src, extracted.v_dst,m, &nfa->nodes[extracted.v_src]))
             continue;
@@ -108,6 +110,8 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         }
         actual_faces -= ce.removed_faces;
     }
+    // cout << "Original faces VS Actual faces of this mesh: >>>>>>>> " << m->faces.size() << " VS "<< actual_faces<< endl;
+    cout << "Mesh simplified"<<endl;
 }
 
 CollapsedEdge HalfEdgeCollapse(Mesh *m,NodeFaceAdjacency *nfa, int src, int dst){
@@ -254,16 +258,16 @@ glm::mat4x4 fundamental_plane_q_mat(glm::vec4 plane){
     return glm::outerProduct(plane, plane);
 }
 
-void provaStampaListaDIMatrici(vector<glm::mat4x4> *Q){
-    for (int i=0; i< int(Q->size()); i++){
-        cout << endl << "{";
-        for (int r = 0; r < 4; r++){
-            cout << "[ ";
-            for(int c = 0 ; c < 4 ; c++){
-                cout << Q[i][r][c] << ", ";
-            }
-            cout << "]"<<endl;
-        }
-        cout << "}" << endl;
-    }
-}
+// void provaStampaListaDIMatrici(vector<glm::mat4x4> *Q){
+//     for (int i=0; i< int(Q->size()); i++){
+//         cout << endl << "{";
+//         for (int r = 0; r < 4; r++){
+//             cout << "[ ";
+//             for(int c = 0 ; c < 4 ; c++){
+//                 cout << Q[i][r][c] << ", ";
+//             }
+//             cout << "]"<<endl;
+//         }
+//         cout << "}" << endl;
+//     }
+//}

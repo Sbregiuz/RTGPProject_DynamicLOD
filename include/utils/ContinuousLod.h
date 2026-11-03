@@ -44,7 +44,9 @@ class ResolutionFrontier
         //how far to contract the mesh (distance based)
         int frontier_cut;
 
-        ResolutionFrontier(){}
+        ResolutionFrontier(int nodes_size){
+            parent_nodes = vector<int>(nodes_size);
+        }
     
         void add_contraction(CollapsedEdge ce){
             history.push_back(ce);
