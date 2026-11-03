@@ -1,12 +1,12 @@
 #pragma once 
 
-#include "utils/mesh.h"
 #include <new>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include "utils/mesh.h"
 
 using namespace std;
 

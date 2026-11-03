@@ -21,7 +21,7 @@ Universita' degli Studi di Milano
 
 
 #pragma once
-#include <utils/mesh_simplifier.h>
+#include "utils/mesh_simplifier.h"
 #include <vector>
 using namespace std;
 
@@ -34,8 +34,8 @@ using namespace std;
 #include <assimp/postprocess.h>
 
 // we include the Mesh class, which manages the "OpenGL side" (= creation and allocation of VBO, VAO, EBO buffers) of the loading of models
-#include <utils/mesh.h>
-#include <utils/NodeFaceAdjacency.h>
+#include "utils/mesh.h"
+#include "utils/NodeFaceAdjacency.h"
 
 /////////////////// MODEL class ///////////////////////
 class Model
@@ -146,7 +146,7 @@ private:
     // = we create and allocate the buffers used to send mesh data to the GPU
     Mesh processMesh(aiMesh* mesh)
     {
-        NodeFaceAdjacency g = NodeFaceAdjacency(int(mesh->mNumVertices));
+        NodeFaceAdjacency g(int(mesh->mNumVertices));
         // data structures for vertices and indices of vertices (for faces)
         vector<Vertex> vertices;
         vector<GLuint> indices;
@@ -229,6 +229,7 @@ private:
         // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
         Mesh m = Mesh(vertices, indices, faces);
         MeshSimplification(&m, &g);
+
         return m;
     }
 

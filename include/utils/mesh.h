@@ -25,10 +25,11 @@ Universita' degli Studi di Milano
 
 #pragma once
 
+#include "utils/ContinuousLod.h"
+#include <vector>
 using namespace std;
 
 // Std. Includes
-#include <vector>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
@@ -59,6 +60,8 @@ public:
     vector<Vertex> vertices;
     vector<Face> faces;
     vector<GLuint> indices;
+    ResolutionFrontier dag;
+
     // VAO
     GLuint VAO;
 
@@ -78,9 +81,11 @@ public:
     Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Face>& faces) noexcept
         : vertices(std::move(vertices)),faces(std::move(faces)),indices(std::move(indices)) 
     {
-        this->setupMesh();
     }
 
+    void initialize(){
+        this->setupMesh();
+    }
     // We implement a user-defined move constructor and move assignment
     // see:
     // https://docs.microsoft.com/en-us/cpp/cpp/move-constructors-and-move-assignment-operators-cpp?view=vs-2019
@@ -136,13 +141,43 @@ public:
 
     //////////////////////////////////////////
 
+    void UpdateIndexBuffer(){
+        this->indices.clear();
+
+        this->indices.reserve(this->faces.size()*3);
+
+        for (Face &face : this->faces){
+            if (!face.active)
+                continue;
+            this->indices.push_back(face.vertices[0]);
+            this->indices.push_back(face.vertices[1]);
+            this->indices.push_back(face.vertices[2]);
+        }
+
+    }
+
+    void SyncGPU(){
+        UpdateIndexBuffer();
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferSubData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            0,
+            this->indices.size()*sizeof(GLuint),
+            this->indices.data()
+        );
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    }
+
     // rendering of mesh
     void Draw()
     {
         // VAO is made "active"
         glBindVertexArray(this->VAO);
         // rendering of data in the VAO
-        glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(this->indices.size()), GL_UNSIGNED_INT, 0);
         // VAO is "detached"
         glBindVertexArray(0);
     }
@@ -172,7 +207,8 @@ private:
         glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &this->vertices[0], GL_STATIC_DRAW);
         // we copy data in the EBO - we must set the data dimension, and the pointer to the structure cointaining the data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
+        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->faces.size() * 3 * sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
 
         // we set in the VAO the pointers to the different vertex attributes (with the relative offsets inside the data structure)
         // vertex positions

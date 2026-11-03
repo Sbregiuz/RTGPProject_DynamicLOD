@@ -11,10 +11,9 @@
 #include <glm/glm.hpp>
 #include <glfw/glfw3.h>
 #include <glad/glad.h>
+#include <utils/ContinuousLod.h>
 
 struct PriorityRecord;
-struct FaceRecord;
-struct CollapsedEdge;
 
 bool compare_prio(PriorityRecord p1, PriorityRecord p2);
 bool sanity_check(int vsrc, int vdst, Mesh *m, Node *n);
@@ -35,26 +34,6 @@ struct PriorityRecord{
     int v_src;
     int v_dst;
     float elision_cost;
-};
-
-struct FaceRecord{
-    int fIdx;
-    int cornerIdx;
-
-    FaceRecord(int f, int c){
-        fIdx = f;
-        cornerIdx = c;
-    }
-};
-
-struct CollapsedEdge{
-    int v_src;
-    int v_dst;
-    int vadj_left = -1;
-    int vadj_right = -1;
-    glm::vec3 src_pos;
-    vector<FaceRecord> faces_to_rebind;
-    int removed_faces;
 };
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FUNCTIONS
@@ -107,8 +86,10 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         CollapsedEdge ce = HalfEdgeCollapse(m, nfa, extracted.v_src, extracted.v_dst);
 
         // ---> Aggiungere ce nel DAG 
+        m->dag.add_contraction(ce);
+        
         // ---> Aggiornare parentela Gerarchica (DAG -> Parents[src] = dst)
-
+        m->dag.update_parent(extracted.v_src, extracted.v_dst);
 
         Q[extracted.v_dst] += Q[extracted.v_src]; 
 
