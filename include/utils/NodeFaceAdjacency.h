@@ -31,6 +31,17 @@ class NodeFaceAdjacency{
             num_nodes = nodesSize;
             nodes = new Node[nodesSize];
         }
+
+        NodeFaceAdjacency(Mesh *m){
+            num_nodes = m->vertices.size();
+            nodes = new Node[num_nodes];
+
+            for(int i = 0; i < int(m->vertices.size()); i++)
+                addNode(i);
+
+            for(Face f : m->faces)
+                addFace(&f);
+        }
     
         // RULE OF 5
         void operator~(){
@@ -78,14 +89,14 @@ class NodeFaceAdjacency{
         //SECOND: Each face is get and processed. This means:
         //          Each vertex adjacent to the face adds it to it's adjacencyFaces
         //          Each vertex adds the other two to it's adjacentVertices
-        void addFace(Face f){
-            int v1 = f.vertices[0];
-            int v2 = f.vertices[1];
-            int v3 = f.vertices[2]; 
+        void addFace(const Face *f){
+            int v1 = f->vertices[0];
+            int v2 = f->vertices[1];
+            int v3 = f->vertices[2]; 
 
-            nodes[v1].adjacencyFaces.push_back(f.index);
-            nodes[v2].adjacencyFaces.push_back(f.index);
-            nodes[v3].adjacencyFaces.push_back(f.index);
+            nodes[v1].adjacencyFaces.push_back(f->index);
+            nodes[v2].adjacencyFaces.push_back(f->index);
+            nodes[v3].adjacencyFaces.push_back(f->index);
 
             addAdjacentNode(v1, v2);
             addAdjacentNode(v1, v3);
@@ -118,3 +129,96 @@ class NodeFaceAdjacency{
 
 
 };
+
+
+/*
+    Mesh processMesh(aiMesh* mesh, bool pre_process)
+    {
+        NodeFaceAdjacency g(int(mesh->mNumVertices));
+        // data structures for vertices and indices of vertices (for faces)
+        vector<Vertex> vertices;
+        vector<GLuint> indices;
+        vector<Face> faces;
+
+        glm::vec3 vector;
+        glm::vec2 vec;
+
+        Vertex vertex;
+        Face face_mesh;
+
+        GLuint i,j;
+
+        for(i = 0; i < mesh->mNumVertices; i++)
+        {
+            
+            // the vector data type used by Assimp is different than the GLM vector needed to allocate the OpenGL buffers
+            // I need to convert the data structures (from Assimp to GLM, which are fully compatible to the OpenGL)
+            
+            // vertices coordinates
+            vector.x = mesh->mVertices[i].x;
+            vector.y = mesh->mVertices[i].y;
+            vector.z = mesh->mVertices[i].z;
+            vertex.Position = vector;
+
+            g.addNode(i);   //Adding the node the the tmp data structure
+
+            // Normals
+            vector.x = mesh->mNormals[i].x;
+            vector.y = mesh->mNormals[i].y;
+            vector.z = mesh->mNormals[i].z;
+            vertex.Normal = vector;
+            // Texture Coordinates
+            // if the model has texture coordinates, than we assign them to a GLM data structure, otherwise we set them at 0
+            // if texture coordinates are present, than Assimp can calculate tangents and bitangents, otherwise we set them at 0 too
+            if(mesh->mTextureCoords[0])
+            {
+                // in this example we assume the model has only one set of texture coordinates. Actually, a vertex can have up to 8 different texture coordinates. For other models and formats, this code needs to be adapted and modified.
+                vec.x = mesh->mTextureCoords[0][i].x;
+                vec.y = mesh->mTextureCoords[0][i].y;
+                vertex.TexCoords = vec;
+
+                // Tangents
+                vector.x = mesh->mTangents[i].x;
+                vector.y = mesh->mTangents[i].y;
+                vector.z = mesh->mTangents[i].z;
+                vertex.Tangent = vector;
+                // Bitangents
+                vector.x = mesh->mBitangents[i].x;
+                vector.y = mesh->mBitangents[i].y;
+                vector.z = mesh->mBitangents[i].z;
+                vertex.Bitangent = vector;
+            }
+            else{
+                vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+                cout << "WARNING::ASSIMP:: MODEL WITHOUT UV COORDINATES -> TANGENT AND BITANGENT ARE = 0" << endl;
+            }
+            // we add the vertex to the list
+            vertices.emplace_back(vertex);
+        }
+
+        //cout << "This Mesh Has " << mesh -> mNumFaces<< "Faces" << endl;
+        // for each face of the mesh, we retrieve the indices of its vertices , and we store them in a vector data structure
+        for(i = 0; i < mesh->mNumFaces; i++)
+        {
+            aiFace* face = &mesh->mFaces[i];
+
+            face_mesh = Face();
+            face_mesh.index = i;
+
+            for(j = 0; j < face->mNumIndices; j++){
+                int vertex_id = face->mIndices[j];
+                face_mesh.vertices[j] = vertex_id;
+                indices.emplace_back(vertex_id);
+            }
+            g.addFace(face_mesh);
+            faces.emplace_back(face_mesh);
+        }
+        //cout << g.to_string() << endl; 
+        // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
+        Mesh m = Mesh(vertices, indices, faces, pre_process);
+        if(pre_process)
+            MeshSimplification(&m, &g);
+
+        m.initialize();
+        return m;
+    } */

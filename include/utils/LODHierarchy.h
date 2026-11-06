@@ -32,7 +32,7 @@ struct CollapsedEdge{
     int removed_faces;
 };
 
-class ResolutionFrontier
+class LODHierarchy
 {
     public:
         //Contains all the contraction history
@@ -44,7 +44,7 @@ class ResolutionFrontier
         //how far to contract the mesh (distance based)
         int frontier_cut;
 
-        ResolutionFrontier(int nodes_size){
+        LODHierarchy(int nodes_size){
             parent_nodes = vector<int>(nodes_size);
         }
     

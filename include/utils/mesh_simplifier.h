@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 #include <glfw/glfw3.h>
 #include <glad/glad.h>
-#include <utils/ContinuousLod.h>
+#include <utils/LODHierarchy.h>
 
 struct PriorityRecord;
 
@@ -38,7 +38,7 @@ struct PriorityRecord{
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FUNCTIONS
 //
-void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
+void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa, LODHierarchy *dag){
     vector<glm::mat4> Q(m->vertices.size(), glm::mat4(0.0f));  
     
     const vector<Face> &faces = m->faces;
@@ -88,10 +88,10 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         CollapsedEdge ce = HalfEdgeCollapse(m, nfa, extracted.v_src, extracted.v_dst);
 
         // ---> Aggiungere ce nel DAG 
-        m->dag.add_contraction(ce);
+        dag->add_contraction(ce);
         
         // ---> Aggiornare parentela Gerarchica (DAG -> Parents[src] = dst)
-        m->dag.update_parent(extracted.v_src, extracted.v_dst);
+        dag->update_parent(extracted.v_src, extracted.v_dst);
 
         Q[extracted.v_dst] += Q[extracted.v_src]; 
 
@@ -110,8 +110,6 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa){
         }
         actual_faces -= ce.removed_faces;
     }
-    // cout << "Original faces VS Actual faces of this mesh: >>>>>>>> " << m->faces.size() << " VS "<< actual_faces<< endl;
-    cout << "Mesh simplified"<<endl;
 }
 
 CollapsedEdge HalfEdgeCollapse(Mesh *m,NodeFaceAdjacency *nfa, int src, int dst){

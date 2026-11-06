@@ -29,6 +29,7 @@
 #include <utils/model.h>
 #include <utils/shader.h>
 #include <utils/camera.h>
+#include <utils/LODController.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -166,9 +167,12 @@ int main()
     
     // This internal block serves as a scope for deleting the models from the memory and granting better consistency. Without it the exit status is != 0 because some GPU-related varibales doesn't delete in time.
     {
-    Model cubeModel("../models/babyyoda.obj",true);
+    Model cubeModel("../models/babyyoda.obj");
     Model planeModel("../models/plane.obj");
     Model cubeModel_untouched("../models/babyyoda.obj");
+
+    LODController controller(&cubeModel);
+
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
     
@@ -228,6 +232,7 @@ int main()
 
         glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(view));
         
+        controller.UpdateLOD(0.0f);
 
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel, cubeModel_untouched);

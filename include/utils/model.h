@@ -21,7 +21,6 @@ Universita' degli Studi di Milano
 
 
 #pragma once
-#include "utils/mesh_simplifier.h"
 #include <vector>
 using namespace std;
 
@@ -35,7 +34,6 @@ using namespace std;
 
 // we include the Mesh class, which manages the "OpenGL side" (= creation and allocation of VBO, VAO, EBO buffers) of the loading of models
 #include "utils/mesh.h"
-#include "utils/NodeFaceAdjacency.h"
 
 /////////////////// MODEL class ///////////////////////
 class Model
@@ -69,13 +67,8 @@ public:
     // to notice that Model class is not strictly following the Rules of 5
     // https://en.cppreference.com/w/cpp/language/rule_of_three
     // because we are not writing a user-defined destructor.
-    Model(const string& path)
-    {
-        this->loadModel(path,false);
-    }
-
-    Model(const string& path, bool pre_process){
-        this->loadModel(path,pre_process);
+    Model(const string& path){
+        this->loadModel(path);
     }
 
     //////////////////////////////////////////
@@ -94,7 +87,7 @@ private:
 
     //////////////////////////////////////////
     // loading of the model using Assimp library. Nodes are processed to build a vector of Mesh class instances
-    void loadModel(string path, bool pre_process)
+    void loadModel(string path)
     {
         // loading using Assimp
         // N.B.: it is possible to set, if needed, some operations to be performed by Assimp after the loading.
@@ -114,13 +107,13 @@ private:
         cout << "processing :"<<path<<endl;
         //cout << "Starting to LOAD THE MODEL: "<< path << endl;
         // we start the recursive processing of nodes in the Assimp data structure
-        this->processNode(scene->mRootNode, scene, pre_process);
+        this->processNode(scene->mRootNode, scene);
     }
 
     //////////////////////////////////////////
 
     // Recursive processing of nodes of Assimp data structure
-    void processNode(aiNode* node, const aiScene* scene, bool pre_process)
+    void processNode(aiNode* node, const aiScene* scene)
     {
         GLuint i;
         
@@ -135,12 +128,12 @@ private:
             // we use emplace_back instead as push_back, so to have the instance created directly in the
             // vector memory, without the creation of a temp copy.
             // https://en.cppreference.com/w/cpp/container/vector/emplace_back
-            this->meshes.emplace_back(processMesh(mesh,pre_process));
+            this->meshes.emplace_back(processMesh(mesh));
         }
         // we then recursively process each of the children nodes
         for(i = 0; i < node->mNumChildren; i++)
         {
-            this->processNode(node->mChildren[i], scene, pre_process);
+            this->processNode(node->mChildren[i], scene);
         }
 
     }
@@ -149,9 +142,8 @@ private:
 
     // Processing of the Assimp mesh in order to obtain an "OpenGL mesh"
     // = we create and allocate the buffers used to send mesh data to the GPU
-    Mesh processMesh(aiMesh* mesh, bool pre_process)
+    Mesh processMesh(aiMesh* mesh)
     {
-        NodeFaceAdjacency g(int(mesh->mNumVertices));
         // data structures for vertices and indices of vertices (for faces)
         vector<Vertex> vertices;
         vector<GLuint> indices;
@@ -176,8 +168,6 @@ private:
             vector.y = mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
-
-            g.addNode(i);   //Adding the node the the tmp data structure
 
             // Normals
             vector.x = mesh->mNormals[i].x;
@@ -213,7 +203,6 @@ private:
             vertices.emplace_back(vertex);
         }
 
-        //cout << "This Mesh Has " << mesh -> mNumFaces<< "Faces" << endl;
         // for each face of the mesh, we retrieve the indices of its vertices , and we store them in a vector data structure
         for(i = 0; i < mesh->mNumFaces; i++)
         {
@@ -227,17 +216,10 @@ private:
                 face_mesh.vertices[j] = vertex_id;
                 indices.emplace_back(vertex_id);
             }
-            g.addFace(face_mesh);
             faces.emplace_back(face_mesh);
         }
-        //cout << g.to_string() << endl; 
         // we return an instance of the Mesh class created using the vertices and faces data structures we have created above.
-        Mesh m = Mesh(vertices, indices, faces, pre_process);
-        if(pre_process)
-            MeshSimplification(&m, &g);
-
-        m.initialize();
-        return m;
+        return Mesh(vertices,indices, faces);
     }
 
     int countFaces(int k, vector<GLuint> indices){

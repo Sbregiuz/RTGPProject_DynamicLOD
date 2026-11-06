@@ -25,7 +25,6 @@ Universita' degli Studi di Milano
 
 #pragma once
 
-#include "utils/ContinuousLod.h"
 #include <vector>
 using namespace std;
 
@@ -60,8 +59,6 @@ public:
     vector<Vertex> vertices;
     vector<Face> faces;
     vector<GLuint> indices;
-    ResolutionFrontier dag;
-    bool use_dag;
 
     // VAO
     GLuint VAO;
@@ -79,10 +76,10 @@ public:
     // Constructor
     // We use initializer list and std::move in order to avoid a copy of the arguments
     // This constructor empties the source vectors (vertices and indices)
-    Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Face>& faces,bool dag_active) noexcept
-        : vertices(std::move(vertices)),faces(std::move(faces)),indices(std::move(indices)), dag(this->vertices.size()), use_dag(dag_active)
+    Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Face>& faces) noexcept
+        : vertices(std::move(vertices)),faces(std::move(faces)),indices(std::move(indices))
     {
-        cout<<"Mesh Initialized"<<endl;
+        initialize();
     }
 
     void initialize(){
@@ -101,7 +98,7 @@ public:
     // In our case it will no longer imply ownership of the GPU resources and its vectors will be empty.
     Mesh(Mesh&& move) noexcept
         // Calls move for both vectors, which internally consists of a simple pointer swap between the new instance and the source one.
-        : vertices(std::move(move.vertices)),faces(std::move(move.faces)) ,indices(std::move(move.indices)),dag(std::move(move.dag)) ,VAO(move.VAO), VBO(move.VBO), EBO(move.EBO)
+        : vertices(std::move(move.vertices)),faces(std::move(move.faces)) ,indices(std::move(move.indices)) ,VAO(move.VAO), VBO(move.VBO), EBO(move.EBO)
     {
         move.VAO = 0; // We *could* set VBO and EBO to 0 too,
         // but since we bring all the 3 values around we can use just one of them to check ownership of the 3 resources.
@@ -160,10 +157,6 @@ public:
     }
 
     void SyncGPU(){
-        if(!use_dag)    //If this mesh doesn't use dag then the loaded informations are always the same
-            return;
-
-        cout << "Syncing with GPU" << endl;
         UpdateIndexBuffer();
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -214,10 +207,8 @@ private:
         glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), &this->vertices[0], GL_STATIC_DRAW);
         // we copy data in the EBO - we must set the data dimension, and the pointer to the structure cointaining the data
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-        if(use_dag)
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->faces.size() * 3 * sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
-        else
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->faces.size() * 3 * sizeof(GLuint), this->indices.data(), GL_DYNAMIC_DRAW);
+       //glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), &this->indices[0], GL_STATIC_DRAW);
 
         // we set in the VAO the pointers to the different vertex attributes (with the relative offsets inside the data structure)
         // vertex positions
