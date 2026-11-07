@@ -234,9 +234,12 @@ void GetLRVertices (Mesh *m, int f, int src, int dst, CollapsedEdge *edge){
         }
     }
     if(idx1 == (idx2+1)%3){ //Right Vertex
+                            //
         edge->vadj_right = m->faces[f].vertices[(idx1+1)%3];
+        edge->fadj_right = f;
     }else{                  //Left Vertex
         edge->vadj_left = m->faces[f].vertices[(idx2+1)%3];
+        edge->fadj_left = f;
     }
 }
 

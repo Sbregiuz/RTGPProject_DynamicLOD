@@ -26,7 +26,9 @@ struct CollapsedEdge{
     int v_src;
     int v_dst;
     int vadj_left = -1;
+    int fadj_left = -1;
     int vadj_right = -1;
+    int fadj_right = -1;
     glm::vec3 src_pos;
     vector<FaceRecord> faces_to_rebind;
     int removed_faces;
@@ -41,15 +43,22 @@ class LODHierarchy
         //Vector for consulting the parent nodes runime in 0(1)
         vector<int> parent_nodes; 
 
+        vector<bool> active_nodes;
+
         //how far to contract the mesh (distance based)
         int frontier_cut;
 
         LODHierarchy(int nodes_size){
             parent_nodes = vector<int>(nodes_size);
+            active_nodes = vector<bool>(nodes_size);
+            for(int i = 0 ; i < nodes_size; i++){
+                active_nodes[i] = true;
+            }
         }
     
         void add_contraction(CollapsedEdge ce){
             history.push_back(ce);
+            active_nodes[ce.v_src] = false;
             frontier_cut ++;
         }
 
@@ -57,5 +66,16 @@ class LODHierarchy
             parent_nodes[son] = new_parent;
         }
 
+        void update_active(int v, bool state){
+            active_nodes[v] = state;
+        }
+
+        bool isVertexActive(int v){
+            return active_nodes[v];
+        }
+
+        vector<CollapsedEdge>& TransformationsList(int someValue){
+            return history;
+        }
 };
 
