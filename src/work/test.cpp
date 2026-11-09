@@ -232,7 +232,7 @@ int main()
 
         glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(view));
         
-        controller.UpdateLOD(0.0f);
+        controller.UpdateLOD(actual_camera_distance);
 
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel, cubeModel_untouched);

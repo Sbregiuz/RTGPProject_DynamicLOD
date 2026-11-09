@@ -34,11 +34,12 @@ class LODController{
         }
 
         void UpdateLOD(float cameraDistance){
+            cout << "CAMERA DISTANCE " << cameraDistance << endl;
             for(JustToBeSure &jtbs: dags){
-                if (!jtbs.try_first_time)
-                    continue;
+                // if (!jtbs.try_first_time)
+                //     continue;
                 
-                vector<CollapsedEdge>& transformations = jtbs.lod_h->TransformationsList(0);
+                vector<CollapsedEdge> transformations = jtbs.lod_h->TransformationsList(cameraDistance);
                 for(int i = int(transformations.size()-1); i >= 0; i--){
                     CollapsedEdge ce = transformations[i];
                     if (can_be_split(&ce, jtbs.lod_h)){

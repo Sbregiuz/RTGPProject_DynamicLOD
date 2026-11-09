@@ -7,6 +7,9 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+const float max_distance = 200.0f;
+const float min_distance = 0.0f;
+
 using namespace std;
 
 struct FaceRecord;
@@ -74,8 +77,14 @@ class LODHierarchy
             return active_nodes[v];
         }
 
-        vector<CollapsedEdge>& TransformationsList(int someValue){
-            return history;
+        vector<CollapsedEdge> TransformationsList(float distance_from_camera){
+            vector<CollapsedEdge> return_val;
+            int max_index = int((history.size()/max_distance)*distance_from_camera);
+            for(int i = 0; i < max_index; i++){
+                return_val.emplace_back(history[i]);
+            }
+            cout << "Reconstruct history up to " << max_index << endl;
+            return return_val;
         }
 };
 
