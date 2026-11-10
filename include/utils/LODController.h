@@ -8,7 +8,6 @@
 struct JustToBeSure{
     Mesh *m;
     LODHierarchy *lod_h;
-    bool try_first_time = true;
 
     JustToBeSure(Mesh *mesh, LODHierarchy *lod) : m(mesh),lod_h(lod){}
 };
@@ -34,20 +33,26 @@ class LODController{
         }
 
         void UpdateLOD(float cameraDistance){
-            cout << "CAMERA DISTANCE " << cameraDistance << endl;
             for(JustToBeSure &jtbs: dags){
-                // if (!jtbs.try_first_time)
-                //     continue;
                 
-                vector<CollapsedEdge> transformations = jtbs.lod_h->TransformationsList(cameraDistance);
-                for(int i = int(transformations.size()-1); i >= 0; i--){
-                    CollapsedEdge ce = transformations[i];
-                    if (can_be_split(&ce, jtbs.lod_h)){
-                        Apply_VertexSplit(jtbs.m, transformations[i]);
-                        jtbs.lod_h->update_active(ce.v_src, true);
-                    }
+                TransformationInfo tinfo = jtbs.lod_h->TransformationsList(cameraDistance);
+                vector<CollapsedEdge> transformations = tinfo.transformations;
+
+                // Operation Selector
+                auto f = tinfo.split 
+                    ? &LODController::Apply_VertexSplit 
+                    : &LODController::Apply_EdgeCollapse;
+
+                for( CollapsedEdge ce : tinfo.transformations){
+                    (this->*f)(jtbs.m,ce);
+                    jtbs.lod_h->update_active(ce.v_src, tinfo.split);
+
+
+                    // if (can_be_split(&ce, jtbs.lod_h)){
+                    //     Apply_VertexSplit(jtbs.m, transformations[i]);
+                    //     jtbs.lod_h->update_active(ce.v_src, true);
+                    // }
                 }
-                jtbs.try_first_time = false;
                 jtbs.m->SyncGPU();
 
                 // cout << "ORIGNAL FACES VS ACTIVE FACES: " << jtbs.m->faces.size()<< " vs "<<CountActiveFaces(jtbs.m) << endl;
@@ -56,19 +61,23 @@ class LODController{
 
     private:
         void Apply_EdgeCollapse(Mesh *m,CollapsedEdge ce){
+            Apply(m, ce, false, ce.v_dst);
         }
 
         void Apply_VertexSplit(Mesh *m,CollapsedEdge ce){
-            //Reactivate Vleft and Vright faces
+            Apply(m, ce, true, ce.v_src);
+        }
+
+        void Apply(Mesh *m, CollapsedEdge ce, bool activate, int v){
             if (ce.fadj_left != -1)
-                m->faces[ce.fadj_left].active = true;
+                m->faces[ce.fadj_left].active = activate;
             if (ce.fadj_right != -1)
-                m->faces[ce.fadj_right].active = true;
+                m->faces[ce.fadj_right].active = activate;
 
             //Rebound faces -> Substitute the v_dst in cornerIdx position with v_src
             for(FaceRecord &fr : ce.faces_to_rebind){
                 Face *f = &m->faces[fr.fIdx];
-                f->vertices[fr.cornerIdx] = ce.v_src;
+                f->vertices[fr.cornerIdx] = v;
             }
         }
 
