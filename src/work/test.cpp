@@ -69,6 +69,7 @@ bool firstFrame_mouse = true;
 
 float min_camera_distance = 3.0f;
 float max_camera_distance = 200.0f;
+float last_camera_distance = min_camera_distance;
 float actual_camera_distance = min_camera_distance;
 
 bool show_cursor = false;
@@ -172,12 +173,13 @@ int main()
     Model cubeModel_untouched("../models/babyyoda.obj");
 
     LODController controller(&cubeModel);
+    controller.UpdateLOD(actual_camera_distance);
 
 
     glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
     
     // Given: camera position and target point
-    glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);  // center of models
+    glm::vec3 target = glm::vec3(0.0f, 2.0f, 0.0f);  // center of models
     glm::vec3 direction = glm::normalize(target - tech_camera.Position);
 
     // Compute Yaw and Pitch from direction
@@ -232,7 +234,8 @@ int main()
 
         glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(view));
         
-        controller.UpdateLOD(actual_camera_distance);
+        if(actual_camera_distance != last_camera_distance)
+            controller.UpdateLOD(actual_camera_distance);
 
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel, cubeModel_untouched);
@@ -242,6 +245,7 @@ int main()
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
+        last_camera_distance = actual_camera_distance;
     }
     }
     object_shader.Delete();
@@ -457,7 +461,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel, Model &c
     cubeModelMatrix = glm::mat4(1.0f);
     //cubeNormalMatrix = glm::mat3(1.0f);
     //cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
-    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(-2.2f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(+2.2f, 1.0f, 0.0f));
     //cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
     cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
     //cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
@@ -487,7 +491,7 @@ void RenderObjects(Shader &shader, Model &planeModel, Model &cubeModel, Model &c
     // we reset to identity at each frame
     cubeModelMatrix = glm::mat4(1.0f);
     //cubeNormalMatrix = glm::mat3(1.0f);
-    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(2.2f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(-2.2f, 1.0f, 0.0f));
     //cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
     cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
     //cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
