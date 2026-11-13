@@ -268,16 +268,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    if( key == GLFW_KEY_1 && action == GLFW_PRESS)
-        active_camera = &game_camera;
-    
-    if( key == GLFW_KEY_2 && action == GLFW_PRESS)
-        active_camera = &tech_camera;
+    if (key == GLFW_KEY_TAB && action == GLFW_PRESS)
+        active_camera = &game_camera == active_camera ? &tech_camera : &game_camera;
 
     if( key == GLFW_KEY_W && action == GLFW_PRESS)
         fill_faces = !fill_faces;
 
-    if( key == GLFW_KEY_TAB && action == GLFW_PRESS)
+    if( key == GLFW_KEY_C && action == GLFW_PRESS)
         ToggleCursor(window);
 }
 
@@ -373,9 +370,9 @@ void Gui_SetUp(){
     ImGui::SetNextWindowSize(ImVec2(WIDTH*0.15f, HEIGHT*0.15f));
     ImGui::Begin("Commands:");
     ImGui::SetWindowFontScale(TEXTSIZE);
-    ImGui::Text("[1] Game Camera");
-    ImGui::Text("[2] Tech Camera");
+    ImGui::Text("[Tab] Switch Camera");
     ImGui::Text("[W] Toggle wireframe");
+    ImGui::Text("[C] Toggle Cursor");
     ImGui::End();
 }
 
@@ -389,7 +386,9 @@ void Gui_SliderSetup(){
     ImGui::SetWindowFontScale(TEXTSIZE);
     ImGui::Text("Move the slider to set the distance from the game camera\n     to the subject under test");
     ImGui::Text("Ctrl+RMB: From slider to input text");
+    ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
     ImGui::SliderFloat("Prova Label", &actual_camera_distance, min_camera_distance, max_camera_distance);
+    ImGui::PopItemFlag();
     ImGui::End();
 }
 
