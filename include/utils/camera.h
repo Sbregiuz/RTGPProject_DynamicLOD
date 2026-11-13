@@ -18,6 +18,7 @@ Universita' degli Studi di Milano
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <string>
 
 // possible camera movements
 enum Camera_Movement {
@@ -43,6 +44,7 @@ const GLfloat SENSITIVITY =  0.25f;
 class Camera
 {
 public:
+    std::string name;
     // Camera Attributes
     glm::vec3 Position;
     glm::vec3 Front;
@@ -64,8 +66,8 @@ public:
     //////////////////////////////////////////
     // simplified constructor
     // it can be extended passing different values of speed and mouse sensitivity, etc...
-    Camera(glm::vec3 position, GLboolean onGround)
-        :Position(position),onGround(onGround),Yaw(YAW),Pitch(PITCH),MovementSpeed(SPEED),MouseSensitivity(SENSITIVITY)
+    Camera(std::string name,glm::vec3 position, GLboolean onGround)
+        :name(name),Position(position),onGround(onGround),Yaw(YAW),Pitch(PITCH),MovementSpeed(SPEED),MouseSensitivity(SENSITIVITY)
     {
         this->WorldUp = glm::vec3(0.0f,1.0f,0.0f);
         // initialization of the camera reference system

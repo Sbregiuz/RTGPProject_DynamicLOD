@@ -8,9 +8,7 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <vector>
-
-const float max_distance = 180.0f;
-const float min_distance = 10.0f;
+#include "utils/Env_Variables.h"
 
 using namespace std;
 
@@ -86,7 +84,8 @@ class LODHierarchy
         }
 
         int new_cut(float distance_from_camera){
-            float t = (distance_from_camera - min_distance)/(max_distance - min_distance);
+            SelectFunction();
+            float t = (distance_from_camera - min_range)/(max_range - min_range);
 
             float f = glm::clamp(t, 0.0f, 1.0f);
 
@@ -125,5 +124,11 @@ class LODHierarchy
             frontier_cut = cut;
             return return_val;
         }
+
+    private:
+        void SelectFunction(){
+            int idx = cut_function_selector;
+        }
+
 };
 

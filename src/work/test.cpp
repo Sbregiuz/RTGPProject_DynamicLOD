@@ -2,6 +2,7 @@
 #include "glm/geometric.hpp"
 #include <cstdio>
 #include <iostream>
+#include "utils/Env_Variables.h"
 
 // THIS IS OPTIONAL AND NOT REQUIRED, ONLY USE THIS IF YOU DON'T WANT GLAD TO INCLUDE windows.h
 // GLAD will include windows.h for APIENTRY if it was not previously defined.
@@ -44,7 +45,7 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 // Window dimensions
-const GLuint WIDTH = 1920, HEIGHT = 1080;
+const GLuint WIDTH = Screen_Width, HEIGHT = Screen_Height;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -67,15 +68,13 @@ bool techCam = false;
 GLfloat game_lastX = WIDTH/2.0f ,game_lastY = HEIGHT/2.0f , tech_lastX = WIDTH/2.0f, tech_lastY = HEIGHT/2.0f; 
 bool firstFrame_mouse = true;
 
-float min_camera_distance = 3.0f;
-float max_camera_distance = 200.0f;
 float last_camera_distance = min_camera_distance;
 float actual_camera_distance = min_camera_distance;
 
 bool show_cursor = false;
 bool fill_faces = true;
 
-float TEXTSIZE = 1.5f;
+float TEXTSIZE = TEXT_SIZE;
 
 // Matrices initialization
 glm::mat4 view = glm::mat4(1.0f);
@@ -88,10 +87,10 @@ glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
 
 //Camera object starting at x,y,z coordinates
 Camera* active_camera;
-Camera game_camera(glm::vec3(0.0f, 3.0f, 20.0f), GL_TRUE);
+Camera game_camera("Game Camera", glm::vec3(0.0f, 3.0f, 20.0f), GL_TRUE);
 
 float techCameraDistance = 7.0f;
-Camera tech_camera(glm::vec3(techCameraDistance/sqrtf(2.0f), 3.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
+Camera tech_camera("Tech Camera", glm::vec3(techCameraDistance/sqrtf(2.0f), 3.0f, techCameraDistance/sqrtf(2.0f)), GL_TRUE);
 
 // Textures 
 vector<GLint> textureID;
@@ -276,6 +275,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if( key == GLFW_KEY_C && action == GLFW_PRESS)
         ToggleCursor(window);
+
+    if( key >= 49 && key <= 57 && action == GLFW_PRESS)
+        cut_function_selector = key - 49;
 }
 
 // callback for mouse events
@@ -367,12 +369,59 @@ GLint LoadTexture(const char *texture_path){
 }
 
 void Gui_SetUp(){
-    ImGui::SetNextWindowSize(ImVec2(WIDTH*0.15f, HEIGHT*0.15f));
+    ImVec2 borders = ImVec2(WIDTH * 0.01f, HEIGHT*0.05f);
+    ImVec2 wpos = ImVec2(borders.x, borders.y);
+    ImVec2 wsize = ImVec2(WIDTH*0.155f, HEIGHT*0.15f);
+    ImGui::SetNextWindowSize(wsize);
+    ImGui::SetNextWindowPos(borders);
     ImGui::Begin("Commands:");
     ImGui::SetWindowFontScale(TEXTSIZE);
     ImGui::Text("[Tab] Switch Camera");
     ImGui::Text("[W] Toggle wireframe");
     ImGui::Text("[C] Toggle Cursor");
+    ImGui::Text("[1-9] Cut Method Selector");
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(ImVec2(
+                wpos.x,
+                wpos.y + wsize.y + WIDTH*0.005f
+                ));
+    wsize.x = WIDTH * 0.20f;
+    wsize.y = HEIGHT * 0.15f;
+    ImGui::SetNextWindowSize(wsize);
+    ImGui::Begin("Cut Methods:");
+    ImGui::SetWindowFontScale(TEXTSIZE);
+    for(int i = 0; i < int(functions_names.size()); i++){
+        string s = "";
+        s = s.append(to_string(i+1));
+        s = s.append(": ");
+        s = s.append(functions_names[i]);
+        ImGui::Text(s.c_str());
+    }
+    ImGui::End();
+
+    borders.y = HEIGHT*0.01f;
+    wsize.x = WIDTH * 0.25f; 
+    wsize.y = HEIGHT * 0.11f;
+
+    wpos.y = HEIGHT - borders.y - wsize.y;
+
+    ImGui::SetNextWindowPos(wpos);
+    ImGui::SetNextWindowSize(wsize);
+    ImGui::Begin("Actual settings:");
+    ImGui::SetWindowFontScale(TEXTSIZE);
+    string s = "Camera ==> " + active_camera->name;
+    ImGui::Text(s.c_str());
+
+    s = "Cut Method ==> " + functions_names[
+        (cut_function_selector < int(functions_names.size())) 
+            ? cut_function_selector 
+            : int(functions_names.size())-1];
+    ImGui::Text(s.c_str());
+
+    s = "Cursor ==> ";
+    s = s.append((show_cursor) ? "Enabled" : "Disabled");
+    ImGui::Text(s.c_str());
     ImGui::End();
 }
 
@@ -382,12 +431,12 @@ void Gui_SliderSetup(){
     ImVec2 position = ImVec2(WIDTH - size.x - borders.x, HEIGHT - size.y - borders.y);
     ImGui::SetNextWindowPos(position);
     ImGui::SetNextWindowSize(size);
-    ImGui::Begin("Camera distance");
+    ImGui::Begin("Camera control");
     ImGui::SetWindowFontScale(TEXTSIZE);
     ImGui::Text("Move the slider to set the distance from the game camera\n     to the subject under test");
     ImGui::Text("Ctrl+RMB: From slider to input text");
     ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
-    ImGui::SliderFloat("Prova Label", &actual_camera_distance, min_camera_distance, max_camera_distance);
+    ImGui::SliderFloat("Distance", &actual_camera_distance, min_camera_distance, max_camera_distance);
     ImGui::PopItemFlag();
     ImGui::End();
 }
