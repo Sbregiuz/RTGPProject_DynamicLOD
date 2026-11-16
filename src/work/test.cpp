@@ -48,6 +48,7 @@
 const GLuint WIDTH = Screen_Width, HEIGHT = Screen_Height;
 
 // Function prototypes
+bool recomputeLod();
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
@@ -70,6 +71,8 @@ bool firstFrame_mouse = true;
 
 float last_camera_distance = min_camera_distance;
 float actual_camera_distance = min_camera_distance;
+
+int last_cut_function_selector = cut_function_selector;
 
 bool show_cursor = false;
 bool fill_faces = true;
@@ -175,7 +178,7 @@ int main()
     controller.UpdateLOD(actual_camera_distance);
 
 
-    glm::mat4 cameraProjection = glm::perspective(45.0f, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
+    glm::mat4 cameraProjection = glm::perspective(fov_y, (float)WIDTH/(float)HEIGHT, 0.1f, 10000.0f);
     
     // Given: camera position and target point
     glm::vec3 target = glm::vec3(0.0f, 2.0f, 0.0f);  // center of models
@@ -233,8 +236,11 @@ int main()
 
         glUniformMatrix4fv(glGetUniformLocation(object_shader.Program, "viewMatrix"), 1, GL_FALSE, glm::value_ptr(view));
         
-        if(actual_camera_distance != last_camera_distance)
+        if(recomputeLod()){
+            recompute_partial_error();
             controller.UpdateLOD(actual_camera_distance);
+            last_cut_function_selector = cut_function_selector;
+        }
 
         // Draw our first triangle
         RenderObjects(object_shader, planeModel, cubeModel, cubeModel_untouched);
@@ -325,6 +331,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
       // we pass the offset to the Camera class instance in order to update the rendering
       active_camera->ProcessMouseMovement(xoffset, yoffset);
 
+}
+
+bool recomputeLod(){
+    return actual_camera_distance != last_camera_distance || cut_function_selector != last_cut_function_selector || pixel_tolerance != last_pixel_tolerance;
 }
 
 GLint LoadTexture(const char *texture_path){
@@ -426,17 +436,21 @@ void Gui_SetUp(){
 }
 
 void Gui_SliderSetup(){
+    int sliders = (cut_function_selector == 3) ? 2 : 1;
+    float ysize = HEIGHT*0.1f + HEIGHT*sliders*0.03f; 
     ImVec2 borders = ImVec2(WIDTH*0.01f,HEIGHT*0.01f);
-    ImVec2 size = ImVec2(WIDTH*0.35f, HEIGHT*0.15f);
+    ImVec2 size = ImVec2(WIDTH*0.39f, ysize);
     ImVec2 position = ImVec2(WIDTH - size.x - borders.x, HEIGHT - size.y - borders.y);
     ImGui::SetNextWindowPos(position);
     ImGui::SetNextWindowSize(size);
-    ImGui::Begin("Camera control");
+    ImGui::Begin("Variables Controller");
     ImGui::SetWindowFontScale(TEXTSIZE);
-    ImGui::Text("Move the slider to set the distance from the game camera\n     to the subject under test");
+    ImGui::Text("Move the slider to set the values");
     ImGui::Text("Ctrl+RMB: From slider to input text");
     ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
-    ImGui::SliderFloat("Distance", &actual_camera_distance, min_camera_distance, max_camera_distance);
+    ImGui::SliderFloat("Distance camera->model", &actual_camera_distance, min_camera_distance, max_camera_distance);
+    if (sliders > 1)
+        ImGui::SliderFloat("Pixel Tolerance", &pixel_tolerance, 1.0f, 15.0f);
     ImGui::PopItemFlag();
     ImGui::End();
 }

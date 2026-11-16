@@ -7,6 +7,7 @@
 #include "glm/common.hpp"
 #include <algorithm>
 #include <glm/glm.hpp>
+#include <iterator>
 #include <vector>
 #include "utils/Env_Variables.h"
 
@@ -35,6 +36,7 @@ struct CollapsedEdge{
     glm::vec3 src_pos;
     vector<FaceRecord> faces_to_rebind;
     int removed_faces;
+    float cumulative_error = 0.0f;
 };
 
 struct TransformationInfo{
@@ -65,10 +67,17 @@ class LODHierarchy
             frontier_cut = -1;
         }
     
-        void add_contraction(CollapsedEdge ce){
+        void add_contraction(CollapsedEdge ce) {
+
+            float prev_error = history.empty() ? 0.0f : history.back().cumulative_error;
+            ce.cumulative_error = std::max(prev_error, ce.cumulative_error);
+            if (ce.cumulative_error < 1e-6f) {
+                ce.cumulative_error = 0.0f;
+            }
+
             history.push_back(ce);
             active_nodes[ce.v_src] = false;
-            frontier_cut ++;
+            frontier_cut++;
         }
 
         void update_parent(int son, int new_parent){
@@ -83,16 +92,19 @@ class LODHierarchy
             return active_nodes[v];
         }
 
-        int new_cut(float distance_from_camera){
-            SelectFunction();
-            float t = (distance_from_camera - min_range)/(max_range - min_range);
 
-            float f = glm::clamp(t, 0.0f, 1.0f);
-
-            return int(f * history.size());  //Range (0,n)       
+        bool VerifyMonotonicity(){
+            float last_error = -1000000;
+            for (CollapsedEdge ce : history) {
+                if (last_error > ce.cumulative_error)
+                    return false;
+                last_error = ce.cumulative_error;
+            }
+            return true;
         }
 
         TransformationInfo TransformationsList(float distance_from_camera){
+            distance_from_camera = max(0.0f, distance_from_camera);
             TransformationInfo return_val;
 
             //New cut
@@ -126,8 +138,41 @@ class LODHierarchy
         }
 
     private:
-        void SelectFunction(){
+        int new_cut(float distance_from_camera){
             int idx = cut_function_selector;
+            switch (idx) {
+                case 0 : 
+                    return linear_interpolation(distance_from_camera);
+
+                case 1 :
+                    return linear_interpolation(distance_from_camera);
+
+                case 2 :
+                    return linear_interpolation(distance_from_camera);
+
+                default : 
+                    return screen_space_error(distance_from_camera);
+            }
+        }
+
+        int linear_interpolation(float distance_from_camera){
+            float t = (distance_from_camera - min_range)/(max_range - min_range);
+
+            float f = glm::clamp(t, 0.0f, 1.0f);
+
+            return int(f * history.size());  //Range (0,n)       
+        }
+
+        int screen_space_error(float distance_from_camera){
+            float max_error = distance_from_camera*error_partial;
+
+            auto it = upper_bound(history.begin(), history.end(), max_error, 
+                        [](float target_error, CollapsedEdge &ce){
+                            return target_error < ce.cumulative_error;
+                        }
+                    );
+
+            return int(distance(history.begin(), it));
         }
 
 };

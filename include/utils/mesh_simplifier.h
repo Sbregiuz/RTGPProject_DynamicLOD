@@ -4,6 +4,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
+#include <cmath>
 #include <queue>
 #include <utils/mesh.h>
 #include <utils/NodeFaceAdjacency.h>
@@ -12,6 +13,8 @@
 #include <glfw/glfw3.h>
 #include <glad/glad.h>
 #include <utils/LODHierarchy.h>
+#include "utils/Env_Variables.h"
+#include <math.h>
 
 struct PriorityRecord;
 
@@ -88,6 +91,7 @@ void MeshSimplification(Mesh *m, NodeFaceAdjacency *nfa, LODHierarchy *dag){
         CollapsedEdge ce = HalfEdgeCollapse(m, nfa, extracted.v_src, extracted.v_dst);
 
         // ---> Aggiungere ce nel DAG 
+        ce.cumulative_error = error_scale* sqrt(extracted.elision_cost);
         dag->add_contraction(ce);
         
         // ---> Aggiornare parentela Gerarchica (DAG -> Parents[src] = dst)
