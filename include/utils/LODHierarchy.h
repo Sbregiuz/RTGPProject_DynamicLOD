@@ -55,10 +55,11 @@ class LODHierarchy
 
         vector<bool> active_nodes;
 
-        //how far to contract the mesh (distance based)
+        const float bounding_sphere_radius;
+
         int frontier_cut;
 
-        LODHierarchy(int nodes_size){
+        LODHierarchy(int nodes_size, float sphere_radius): bounding_sphere_radius(sphere_radius){
             parent_nodes = vector<int>(nodes_size);
             active_nodes = vector<bool>(nodes_size);
             for(int i = 0 ; i < nodes_size; i++){
@@ -104,6 +105,8 @@ class LODHierarchy
         }
 
         TransformationInfo TransformationsList(float distance_from_camera){
+            distance_from_camera = distance_from_camera - bounding_sphere_radius;
+            //Considera togliere dalla distanza il bounding radius mesh
             distance_from_camera = max(0.0f, distance_from_camera);
             TransformationInfo return_val;
 
@@ -137,7 +140,24 @@ class LODHierarchy
             return return_val;
         }
 
+        void normalize_errors() {
+            std::vector<CollapsedEdge>& history = this->history;
+            if (history.empty() || bounding_sphere_radius <= 0.0f) return;
+
+            float max_err = history.back().cumulative_error;
+            if (max_err <= 0.0f) return; // Flat sub-mesh (all zero errors), keep as-is
+
+            float max_world_deviation = 0.15f * bounding_sphere_radius;
+            float scale = max_world_deviation / max_err;
+            // cout << "THIS IS THE SCALE TO APPLY " << scale << endl;
+
+            for (auto& ce : history) {
+                ce.cumulative_error *= scale;
+            }
+        }
+
     private:
+
         int new_cut(float distance_from_camera){
             int idx = cut_function_selector;
             switch (idx) {
@@ -148,7 +168,7 @@ class LODHierarchy
                     return linear_interpolation(distance_from_camera);
 
                 case 2 :
-                    return linear_interpolation(distance_from_camera);
+                    return screen_space_coverage(distance_from_camera);
 
                 default : 
                     return screen_space_error(distance_from_camera);
@@ -164,7 +184,7 @@ class LODHierarchy
         }
 
         int screen_space_error(float distance_from_camera){
-            float max_error = distance_from_camera*error_partial;
+            float max_error = distance_from_camera * sse_error_partial;
 
             auto it = upper_bound(history.begin(), history.end(), max_error, 
                         [](float target_error, CollapsedEdge &ce){
@@ -173,6 +193,13 @@ class LODHierarchy
                     );
 
             return int(distance(history.begin(), it));
+        }
+
+        int screen_space_coverage(float distance_from_camera){
+            float pixel_diameter = ssc_error_partial * (bounding_sphere_radius / distance_from_camera);
+
+            float f = 1 - glm::clamp( (pixel_diameter - min_pixels)/(max_pixels - min_pixels) , 0.0f, 1.0f);
+            return int(f * history.size());
         }
 
 };

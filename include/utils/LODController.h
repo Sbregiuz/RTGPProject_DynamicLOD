@@ -2,16 +2,15 @@
 
 #include "utils/NodeFaceAdjacency.h"
 #include "utils/mesh_simplifier.h"
-#include <iterator>
 #include <utils/model.h>
 #include <utils/LODHierarchy.h>
 
 struct JustToBeSure{
-    const float bounding_sphere_radius;
+    // const float bounding_sphere_radius;
     Mesh *m;
     LODHierarchy *lod_h;
 
-    JustToBeSure(Mesh *mesh, LODHierarchy *lod, float b_sphere_radius) : bounding_sphere_radius(b_sphere_radius),m(mesh),lod_h(lod){}
+    JustToBeSure(Mesh *mesh, LODHierarchy *lod) : m(mesh),lod_h(lod){}
 };
 
 class LODController{
@@ -24,26 +23,26 @@ class LODController{
                 Mesh *m = &model->meshes[i];
 
                 NodeFaceAdjacency nfa(m);
-                LODHierarchy* lod_h = new LODHierarchy(int(m->vertices.size()));
                 float b_sphere_radius = ComputeBoundingSphere(m);
-                cout << "--------------------------------------------------------" << endl;
-                cout << "Radius is "<< b_sphere_radius << endl;
+                LODHierarchy* lod_h = new LODHierarchy(int(m->vertices.size()),b_sphere_radius);
+                // cout << "--------------------------------------------------------" << endl;
+                // cout << "Radius is "<< b_sphere_radius << endl;
                 MeshSimplification(m, &nfa,lod_h);
                 // ~nfa;
 
-                cout << "Verify Monotonicity " << ((lod_h->VerifyMonotonicity()) ? "true" : "false") <<endl;
-                cout << "Error Range ( "<< lod_h->history.front().cumulative_error<< ", " << lod_h->history.back().cumulative_error<< ")"<<endl;
-                normalize_errors(b_sphere_radius,lod_h);
-                cout << "NORMALIZED >> Error Range ( "<< lod_h->history.front().cumulative_error<< ", " << lod_h->history.back().cumulative_error<< ")"<<endl;
+                // cout << "Verify Monotonicity " << ((lod_h->VerifyMonotonicity()) ? "true" : "false") <<endl;
+                // cout << "Error Range ( "<< lod_h->history.front().cumulative_error<< ", " << lod_h->history.back().cumulative_error<< ")"<<endl;
+                lod_h->normalize_errors();
+                // cout << "NORMALIZED >> Error Range ( "<< lod_h->history.front().cumulative_error<< ", " << lod_h->history.back().cumulative_error<< ")"<<endl;
                 
-                dags.emplace_back(JustToBeSure(m,lod_h,b_sphere_radius));
+                dags.emplace_back(JustToBeSure(m,lod_h));
             }
         }
 
         void UpdateLOD(float cameraDistance){
             for(JustToBeSure &jtbs: dags){
                 
-                TransformationInfo tinfo = jtbs.lod_h->TransformationsList(cameraDistance-jtbs.bounding_sphere_radius);
+                TransformationInfo tinfo = jtbs.lod_h->TransformationsList(cameraDistance);
                 vector<CollapsedEdge> transformations = tinfo.transformations;
 
                 // Operation Selector
@@ -97,24 +96,6 @@ class LODController{
             return true;
         }
             
-        void normalize_errors(float b_sphere_radius, LODHierarchy* lod_h) {
-            std::vector<CollapsedEdge>& history = lod_h->history;
-            if (history.empty() || b_sphere_radius <= 0.0f) return;
-
-            float max_err = history.back().cumulative_error;
-            if (max_err <= 0.0f) return; // Flat sub-mesh (all zero errors), keep as-is
-
-            float max_world_deviation = 0.15f * b_sphere_radius;
-            float scale = max_world_deviation / max_err;
-            cout << "THIS IS THE SCALE TO APPLY " << scale << endl;
-
-            for (auto& ce : history) {
-                ce.cumulative_error *= scale;
-            }
-            // // Controllo immediato: deve stampare esattamente 0.15 * b_sphere_radius
-            // std::cout << "CHECK INSIDE: " << history.back().cumulative_error
-            //           << " (expected " << max_world_deviation << ")" << std::endl;
-        }
 
         float ComputeBoundingSphere(const Mesh* m){
             if (m->vertices.empty()) {

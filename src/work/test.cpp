@@ -240,6 +240,8 @@ int main()
             recompute_partial_error();
             controller.UpdateLOD(actual_camera_distance);
             last_cut_function_selector = cut_function_selector;
+            last_min_pixels = min_pixels;
+            last_max_pixels = max_pixels;
         }
 
         // Draw our first triangle
@@ -334,7 +336,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 }
 
 bool recomputeLod(){
-    return actual_camera_distance != last_camera_distance || cut_function_selector != last_cut_function_selector || pixel_tolerance != last_pixel_tolerance;
+    return actual_camera_distance != last_camera_distance 
+        || cut_function_selector != last_cut_function_selector 
+        || pixel_tolerance != last_pixel_tolerance
+        || min_pixels != last_min_pixels
+        || max_pixels != last_max_pixels; 
 }
 
 GLint LoadTexture(const char *texture_path){
@@ -435,12 +441,34 @@ void Gui_SetUp(){
     ImGui::End();
 }
 
+void PixelToleranceSlider(){
+    ImGui::SliderFloat("Pixel Tolerance", &pixel_tolerance, 1.0f, 15.0f);
+}
+
+void ScreenSpaceCoverageSliders(){
+    ImGui::SliderInt("Min Pixels", &min_pixels, range_pixels_min, max_pixels);
+    ImGui::SliderInt("Pixel Tolerance", &max_pixels, min_pixels, range_pixels_max);
+}
+
 void Gui_SliderSetup(){
-    int sliders = (cut_function_selector == 3) ? 2 : 1;
+    int sliders;
+    switch (cut_function_selector) {
+        case 2:
+            sliders = 3;
+            break;
+        case 3:
+            sliders = 2;
+            break;
+        default:
+            sliders = 1;
+            break;
+    };
+
     float ysize = HEIGHT*0.1f + HEIGHT*sliders*0.03f; 
     ImVec2 borders = ImVec2(WIDTH*0.01f,HEIGHT*0.01f);
     ImVec2 size = ImVec2(WIDTH*0.39f, ysize);
     ImVec2 position = ImVec2(WIDTH - size.x - borders.x, HEIGHT - size.y - borders.y);
+
     ImGui::SetNextWindowPos(position);
     ImGui::SetNextWindowSize(size);
     ImGui::Begin("Variables Controller");
@@ -449,11 +477,21 @@ void Gui_SliderSetup(){
     ImGui::Text("Ctrl+RMB: From slider to input text");
     ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
     ImGui::SliderFloat("Distance camera->model", &actual_camera_distance, min_camera_distance, max_camera_distance);
-    if (sliders > 1)
-        ImGui::SliderFloat("Pixel Tolerance", &pixel_tolerance, 1.0f, 15.0f);
+    switch (cut_function_selector){
+        case 2:
+            ScreenSpaceCoverageSliders();
+            break;
+        case 3:
+            PixelToleranceSlider();
+            break;
+        default:
+            break;
+    }
+
     ImGui::PopItemFlag();
     ImGui::End();
 }
+
 
 void ToggleCursor(GLFWwindow *window){
     if (show_cursor)
