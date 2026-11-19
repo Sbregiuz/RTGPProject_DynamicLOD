@@ -447,8 +447,9 @@ void PixelToleranceSlider(){
 }
 
 void ScreenSpaceCoverageSliders(){
-    ImGui::SliderInt("Min Pixels", &min_pixels, range_pixels_min, max_pixels);
-    ImGui::SliderInt("Pixel Tolerance", &max_pixels, min_pixels, range_pixels_max);
+    ImGui::Text("Pixel Thresholds");
+    ImGui::SliderInt("Min Resolution", &min_pixels, range_pixels_min, max_pixels);
+    ImGui::SliderInt("Max Resolution", &max_pixels, min_pixels, range_pixels_max);
 }
 
 void NonLinearInterpolationSlider(){
