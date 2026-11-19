@@ -340,7 +340,8 @@ bool recomputeLod(){
         || cut_function_selector != last_cut_function_selector 
         || pixel_tolerance != last_pixel_tolerance
         || min_pixels != last_min_pixels
-        || max_pixels != last_max_pixels; 
+        || max_pixels != last_max_pixels
+        || exponent != last_exponent;
 }
 
 GLint LoadTexture(const char *texture_path){
@@ -450,9 +451,16 @@ void ScreenSpaceCoverageSliders(){
     ImGui::SliderInt("Pixel Tolerance", &max_pixels, min_pixels, range_pixels_max);
 }
 
+void NonLinearInterpolationSlider(){
+    ImGui::SliderFloat("NonLinearity Exponent", &exponent, min_exponent, max_exponent);
+}
+
 void Gui_SliderSetup(){
     int sliders;
     switch (cut_function_selector) {
+        case 1:
+            sliders = 2;
+            break;
         case 2:
             sliders = 3;
             break;
@@ -478,6 +486,9 @@ void Gui_SliderSetup(){
     ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop, true);
     ImGui::SliderFloat("Distance camera->model", &actual_camera_distance, min_camera_distance, max_camera_distance);
     switch (cut_function_selector){
+        case 1:
+            NonLinearInterpolationSlider();
+            break;
         case 2:
             ScreenSpaceCoverageSliders();
             break;

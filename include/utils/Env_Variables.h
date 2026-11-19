@@ -33,6 +33,13 @@ const std::vector<std::string> functions_names = {
 const float min_range = 10.0f;
 const float max_range = 180.0f;
 
+// Non-Linear Interpolation 
+float exponent = 0.4f;
+
+const float min_exponent = 0.1f;
+const float max_exponent = 1.0f;
+float last_exponent = exponent;
+
 //Screen Coverage
 int const range_pixels_min = 10;
 int const range_pixels_max = 1000;

@@ -6,6 +6,7 @@
 
 #include "glm/common.hpp"
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <iterator>
 #include <vector>
@@ -165,7 +166,7 @@ class LODHierarchy
                     return linear_interpolation(distance_from_camera);
 
                 case 1 :
-                    return linear_interpolation(distance_from_camera);
+                    return nonlinear_interpolation(distance_from_camera);
 
                 case 2 :
                     return screen_space_coverage(distance_from_camera);
@@ -181,6 +182,14 @@ class LODHierarchy
             float f = glm::clamp(t, 0.0f, 1.0f);
 
             return int(f * history.size());  //Range (0,n)       
+        }
+
+        int nonlinear_interpolation(float distance_from_camera){
+            float t = (distance_from_camera - min_range)/(max_range - min_range);
+
+            float f_linear = glm::clamp(t, 0.0f, 1.0f);
+
+            return int(pow(f_linear, exponent) * history.size());  
         }
 
         int screen_space_error(float distance_from_camera){
@@ -201,6 +210,5 @@ class LODHierarchy
             float f = 1 - glm::clamp( (pixel_diameter - min_pixels)/(max_pixels - min_pixels) , 0.0f, 1.0f);
             return int(f * history.size());
         }
-
 };
 
