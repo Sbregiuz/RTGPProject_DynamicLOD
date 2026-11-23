@@ -5,17 +5,17 @@
 #include <utils/model.h>
 #include <utils/LODHierarchy.h>
 
-struct JustToBeSure{
+struct SubMeshController{
     // const float bounding_sphere_radius;
     Mesh *m;
     LODHierarchy *lod_h;
 
-    JustToBeSure(Mesh *mesh, LODHierarchy *lod) : m(mesh),lod_h(lod){}
+    SubMeshController(Mesh *mesh, LODHierarchy *lod) : m(mesh),lod_h(lod){}
 };
 
 class LODController{
     
-    vector<JustToBeSure> dags;
+    vector<SubMeshController> dags;
     
     public:
         LODController(Model *model){
@@ -35,14 +35,14 @@ class LODController{
                 lod_h->normalize_errors();
                 // cout << "NORMALIZED >> Error Range ( "<< lod_h->history.front().cumulative_error<< ", " << lod_h->history.back().cumulative_error<< ")"<<endl;
                 
-                dags.emplace_back(JustToBeSure(m,lod_h));
+                dags.emplace_back(SubMeshController(m,lod_h));
             }
         }
 
         void UpdateLOD(float cameraDistance){
-            for(JustToBeSure &jtbs: dags){
+            for(SubMeshController &controller: dags){
                 
-                TransformationInfo tinfo = jtbs.lod_h->TransformationsList(cameraDistance);
+                TransformationInfo tinfo = controller.lod_h->TransformationsList(cameraDistance);
                 vector<CollapsedEdge> transformations = tinfo.transformations;
 
                 // Operation Selector
@@ -51,18 +51,16 @@ class LODController{
                     : &LODController::Apply_EdgeCollapse;
 
                 for( CollapsedEdge ce : tinfo.transformations){
-                    (this->*f)(jtbs.m,ce);
-                    jtbs.lod_h->update_active(ce.v_src, tinfo.split);
+                    (this->*f)(controller.m,ce);
+                    controller.lod_h->update_active(ce.v_src, tinfo.split);
 
 
-                    // if (can_be_split(&ce, jtbs.lod_h)){
-                    //     Apply_VertexSplit(jtbs.m, transformations[i]);
-                    //     jtbs.lod_h->update_active(ce.v_src, true);
+                    // if (can_be_split(&ce, controller.lod_h)){
+                    //     Apply_VertexSplit(controller.m, transformations[i]);
+                    //     controller.lod_h->update_active(ce.v_src, true);
                     // }
                 }
-                jtbs.m->SyncGPU();
-
-                // cout << "ORIGNAL FACES VS ACTIVE FACES: " << jtbs.m->faces.size()<< " vs "<<CountActiveFaces(jtbs.m) << endl;
+                controller.m->SyncGPU();
             }
         }
 

@@ -2,6 +2,7 @@
 /[Ll]ibs/[Ww]in/
 /src/.vscode/
 /src/.cache/
+/[Rr]elation/
 
 #IGNORE FILES
 /src/work/*.exe
